@@ -1,27 +1,60 @@
-import React, { useState } from 'react';
-import { 
-  TrendingUp, 
-  Award, 
-  Heart, 
-  Smile, 
-  Calendar, 
-  Gift, 
-  ArrowLeft, 
-  Search, 
-  Minus, 
-  Plus, 
-  Trash2, 
-  ShoppingCart, 
-  Star 
-} from 'lucide-react';
+import React, { useState } from "react";
+import PulseSurvey from "./pulseSurvey.jsx";
+import EmployeeServicesCenter from "./employeeServicesCenter.jsx";
+import TailoredGuidance from "./tailoredGuidance.jsx";
+import {
+  TrendingUp,
+  Award,
+  Heart,
+  Smile,
+  Calendar,
+  Gift,
+  ArrowLeft,
+  Search,
+  Minus,
+  Plus,
+  Trash2,
+  ShoppingCart,
+  Star,
+} from "lucide-react";
 
 // Mock data and utilities
 const mockUsers = [
-  { id: "1", name: "Zeann Palma", department: "Engineering", avatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=40" },
-  { id: "2", name: "Francis Jelo", department: "Design", avatar: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40" },
-  { id: "3", name: "Jasfer DelaCruz", department: "Marketing", avatar: "https://images.pexels.com/photos/718978/pexels-photo-718978.jpeg?auto=compress&cs=tinysrgb&w=40" },
-  { id: "4", name: "Czar Reenjit", department: "Sales", avatar: "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=40" },
-  { id: "5", name: "John Smith", department: "HR", avatar: "https://images.pexels.com/photos/697509/pexels-photo-697509.jpeg?auto=compress&cs=tinysrgb&w=40" },
+  {
+    id: "1",
+    name: "Zeann Palma",
+    department: "Engineering",
+    avatar:
+      "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=40",
+  },
+  {
+    id: "2",
+    name: "Francis Jelo",
+    department: "Design",
+    avatar:
+      "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40",
+  },
+  {
+    id: "3",
+    name: "Jasfer DelaCruz",
+    department: "Marketing",
+    avatar:
+      "https://images.pexels.com/photos/718978/pexels-photo-718978.jpeg?auto=compress&cs=tinysrgb&w=40",
+  },
+  {
+    id: "4",
+    name: "Czar Reenjit",
+    department: "Sales",
+    avatar:
+      "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=40",
+  },
+  {
+    id: "5",
+    name: "John Smith",
+    department: "HR",
+    avatar:
+      "https://images.pexels.com/photos/697509/pexels-photo-697509.jpeg?auto=compress&cs=tinysrgb&w=40",
+  },
 ];
 
 const mockProducts = [
@@ -29,7 +62,8 @@ const mockProducts = [
     id: "1",
     name: "Company T-Shirt",
     description: "Premium cotton t-shirt with company logo",
-    image: "https://images.pexels.com/photos/8532616/pexels-photo-8532616.jpeg?auto=compress&cs=tinysrgb&w=400",
+    image:
+      "https://images.pexels.com/photos/8532616/pexels-photo-8532616.jpeg?auto=compress&cs=tinysrgb&w=400",
     pointsCost: 150,
     category: "apparel",
     inventory: 25,
@@ -39,7 +73,8 @@ const mockProducts = [
     id: "2",
     name: "Coffee Mug",
     description: "Ceramic mug perfect for your morning coffee",
-    image: "https://images.pexels.com/photos/302894/pexels-photo-302894.jpeg?auto=compress&cs=tinysrgb&w=400",
+    image:
+      "https://images.pexels.com/photos/302894/pexels-photo-302894.jpeg?auto=compress&cs=tinysrgb&w=400",
     pointsCost: 75,
     category: "accessories",
     inventory: 50,
@@ -49,7 +84,8 @@ const mockProducts = [
     id: "3",
     name: "Wireless Earbuds",
     description: "High-quality bluetooth earbuds",
-    image: "https://images.pexels.com/photos/3587478/pexels-photo-3587478.jpeg?auto=compress&cs=tinysrgb&w=400",
+    image:
+      "https://images.pexels.com/photos/3587478/pexels-photo-3587478.jpeg?auto=compress&cs=tinysrgb&w=400",
     pointsCost: 500,
     category: "electronics",
     inventory: 10,
@@ -59,7 +95,8 @@ const mockProducts = [
     id: "4",
     name: "Desk Plant",
     description: "Small succulent plant for your workspace",
-    image: "https://images.pexels.com/photos/1084199/pexels-photo-1084199.jpeg?auto=compress&cs=tinysrgb&w=400",
+    image:
+      "https://images.pexels.com/photos/1084199/pexels-photo-1084199.jpeg?auto=compress&cs=tinysrgb&w=400",
     pointsCost: 100,
     category: "office",
     inventory: 30,
@@ -69,7 +106,8 @@ const mockProducts = [
     id: "5",
     name: "Gift Card - $25",
     description: "Amazon gift card worth $25",
-    image: "https://images.pexels.com/photos/264787/pexels-photo-264787.jpeg?auto=compress&cs=tinysrgb&w=400",
+    image:
+      "https://images.pexels.com/photos/264787/pexels-photo-264787.jpeg?auto=compress&cs=tinysrgb&w=400",
     pointsCost: 300,
     category: "giftcards",
     inventory: 100,
@@ -79,7 +117,8 @@ const mockProducts = [
     id: "6",
     name: "Notebook Set",
     description: "Premium notebook and pen set",
-    image: "https://images.pexels.com/photos/167682/pexels-photo-167682.jpeg?auto=compress&cs=tinysrgb&w=400",
+    image:
+      "https://images.pexels.com/photos/167682/pexels-photo-167682.jpeg?auto=compress&cs=tinysrgb&w=400",
     pointsCost: 120,
     category: "office",
     inventory: 40,
@@ -95,7 +134,8 @@ const mockTransactions = [
     description: "Received cheer from Czar Reenjit",
     message: "Great job on the presentation!",
     date: "2025-06-23T10:30:00Z",
-    avatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=40",
+    avatar:
+      "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=40",
   },
   {
     id: "2",
@@ -112,7 +152,8 @@ const mockTransactions = [
     description: "Cheered Francis Jelo",
     message: "Thanks for helping with the project",
     date: "2025-06-22T09:15:00Z",
-    avatar: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40",
+    avatar:
+      "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40",
   },
   {
     id: "4",
@@ -121,12 +162,13 @@ const mockTransactions = [
     description: "Received cheer from Jasfer DelaCruz",
     message: "Outstanding work this week!",
     date: "2025-06-21T16:20:00Z",
-    avatar: "https://images.pexels.com/photos/718978/pexels-photo-718978.jpeg?auto=compress&cs=tinysrgb&w=40",
+    avatar:
+      "https://images.pexels.com/photos/718978/pexels-photo-718978.jpeg?auto=compress&cs=tinysrgb&w=40",
   },
 ];
 
-// Utility functions
-const formatDate = (dateString: string) => {
+// Utility function
+const formatDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {
     month: "short",
@@ -137,44 +179,60 @@ const formatDate = (dateString: string) => {
 };
 
 // UI Components
-const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`bg-white rounded-xl border border-blue-100 shadow-md ${className}`}>{children}</div>
+const Card = ({
+  children,
+  className = "",
+}) => (
+  <div
+    className={`bg-white rounded-xl border border-blue-100 shadow-md ${className}`}
+  >
+    {children}
+  </div>
 );
 
-const CardHeader = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+const CardHeader = ({
+  children,
+  className = "",
+}) => (
   <div className={`p-6 pb-3 ${className}`}>{children}</div>
 );
 
-const CardContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+const CardContent = ({
+  children,
+  className = "",
+}) => (
   <div className={`p-6 pt-0 ${className}`}>{children}</div>
 );
 
-const CardTitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <h3 className={`text-lg font-semibold text-blue-900 tracking-tight ${className}`}>{children}</h3>
+const CardTitle = ({
+  children,
+  className = "",
+}) => (
+  <h3
+    className={`text-lg font-semibold text-blue-900 tracking-tight ${className}`}
+  >
+    {children}
+  </h3>
 );
 
-const CardDescription = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+const CardDescription = ({
+  children,
+  className = "",
+}) => (
   <p className={`text-sm text-blue-600 mt-1 ${className}`}>{children}</p>
 );
 
-const Button = ({ 
-  children, 
-  onClick, 
-  disabled = false, 
-  variant = "primary", 
-  size = "md", 
-  className = "", 
-  type = "button" 
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  variant?: "primary" | "secondary" | "outline" | "ghost";
-  size?: "sm" | "md" | "lg";
-  className?: string;
-  type?: "button" | "submit";
+const Button = ({
+  children,
+  onClick,
+  disabled = false,
+  variant = "primary",
+  size = "md",
+  className = "",
+  type = "button",
 }) => {
-  const baseClasses = "inline-flex items-center justify-center rounded-lg font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm";
+  const baseClasses =
+    "inline-flex items-center justify-center rounded-lg font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm";
 
   const variants = {
     primary: "bg-blue-700 text-white hover:bg-blue-800 focus:ring-blue-500",
@@ -201,20 +259,13 @@ const Button = ({
   );
 };
 
-const Input = ({ 
-  placeholder, 
-  value, 
-  onChange, 
-  type = "text", 
+const Input = ({
+  placeholder,
+  value,
+  onChange,
+  type = "text",
   className = "",
   id
-}: {
-  placeholder?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  type?: string;
-  className?: string;
-  id?: string;
 }) => (
   <input
     id={id}
@@ -226,20 +277,13 @@ const Input = ({
   />
 );
 
-const Textarea = ({ 
-  placeholder, 
-  value, 
-  onChange, 
-  rows = 3, 
+const Textarea = ({
+  placeholder,
+  value,
+  onChange,
+  rows = 3,
   className = "",
   id
-}: {
-  placeholder?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  rows?: number;
-  className?: string;
-  id?: string;
 }) => (
   <textarea
     id={id}
@@ -251,16 +295,11 @@ const Textarea = ({
   />
 );
 
-const Select = ({ 
-  value, 
-  onChange, 
-  children, 
-  className = "" 
-}: {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  children: React.ReactNode;
-  className?: string;
+const Select = ({
+  value,
+  onChange,
+  children,
+  className = "",
 }) => (
   <select
     value={value}
@@ -271,14 +310,10 @@ const Select = ({
   </select>
 );
 
-const Badge = ({ 
-  children, 
-  variant = "default", 
-  className = "" 
-}: {
-  children: React.ReactNode;
-  variant?: "default" | "secondary" | "success" | "warning" | "error";
-  className?: string;
+const Badge = ({
+  children,
+  variant = "default",
+  className = "",
 }) => {
   const variants = {
     default: "bg-blue-100 text-blue-800 border border-blue-200",
@@ -289,26 +324,30 @@ const Badge = ({
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${variants[variant]} ${className}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${variants[variant]} ${className}`}
+    >
       {children}
     </span>
   );
 };
 
-const Avatar = ({ 
-  src, 
-  alt, 
-  fallback, 
-  className = "" 
-}: {
-  src?: string;
-  alt?: string;
-  fallback?: string;
-  className?: string;
+const Avatar = ({
+  src,
+  alt,
+  fallback,
+  className = "",
 }) => (
-  <div className={`relative inline-block ${className}`} style={{ minWidth: 32, minHeight: 32 }}>
+  <div
+    className={`relative inline-block ${className}`}
+    style={{ minWidth: 32, minHeight: 32 }}
+  >
     {src ? (
-      <img src={src} alt={alt} className="w-full h-full rounded-full object-cover border border-blue-100" />
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-full rounded-full object-cover border border-blue-100"
+      />
     ) : (
       <div className="w-full h-full rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
         {fallback}
@@ -317,14 +356,10 @@ const Avatar = ({
   </div>
 );
 
-const Progress = ({ 
-  value, 
-  max = 100, 
-  className = "" 
-}: {
-  value: number;
-  max?: number;
-  className?: string;
+const Progress = ({
+  value,
+  max = 100,
+  className = "",
 }) => (
   <div className={`w-full bg-blue-100 rounded-full h-2 ${className}`}>
     <div
@@ -337,6 +372,7 @@ const Progress = ({
 // Main Shop Component
 const Shop = () => {
   const [activeView, setActiveView] = useState("dashboard");
+  const [pulseOpen, setPulseOpen] = useState(true);
   const [userPoints, setUserPoints] = useState({
     available: 850,
     earned: 1200,
@@ -352,7 +388,7 @@ const Shop = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Rewards Shop state
-  const [cart, setCart] = useState<Record<string, number>>({});
+  const [cart, setCart] = useState({});
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [shopSearchTerm, setShopSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -389,11 +425,36 @@ const Shop = () => {
   ];
 
   const moods = [
-    { emoji: "😄", label: "Excellent", value: "excellent", color: "bg-green-100 border-green-300" },
-    { emoji: "😊", label: "Good", value: "good", color: "bg-blue-100 border-blue-300" },
-    { emoji: "😐", label: "Okay", value: "okay", color: "bg-yellow-100 border-yellow-300" },
-    { emoji: "😔", label: "Not Great", value: "not-great", color: "bg-orange-100 border-orange-300" },
-    { emoji: "😞", label: "Poor", value: "poor", color: "bg-red-100 border-red-300" },
+    {
+      emoji: "😄",
+      label: "Excellent",
+      value: "excellent",
+      color: "bg-green-100 border-green-300",
+    },
+    {
+      emoji: "😊",
+      label: "Good",
+      value: "good",
+      color: "bg-blue-100 border-blue-300",
+    },
+    {
+      emoji: "😐",
+      label: "Okay",
+      value: "okay",
+      color: "bg-yellow-100 border-yellow-300",
+    },
+    {
+      emoji: "😔",
+      label: "Not Great",
+      value: "not-great",
+      color: "bg-orange-100 border-orange-300",
+    },
+    {
+      emoji: "😞",
+      label: "Poor",
+      value: "poor",
+      color: "bg-red-100 border-red-300",
+    },
   ];
 
   const categories = [
@@ -416,12 +477,13 @@ const Shop = () => {
     const matchesSearch =
       product.name.toLowerCase().includes(shopSearchTerm.toLowerCase()) ||
       product.description.toLowerCase().includes(shopSearchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+    const matchesCategory =
+      categoryFilter === "all" || product.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
   // Cart functions
-  const addToCart = (productId: string) => {
+  const addToCart = (productId) => {
     setCart((prev) => ({
       ...prev,
       [productId]: (prev[productId] || 0) + 1,
@@ -429,7 +491,7 @@ const Shop = () => {
     showNotification("Added to cart!");
   };
 
-  const updateCartQuantity = (productId: string, newQuantity: number) => {
+  const updateCartQuantity = (productId, newQuantity) => {
     if (newQuantity <= 0) {
       removeFromCart(productId);
       return;
@@ -440,7 +502,7 @@ const Shop = () => {
     }));
   };
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (productId) => {
     setCart((prev) => {
       const newCart = { ...prev };
       delete newCart[productId];
@@ -466,7 +528,7 @@ const Shop = () => {
   };
 
   // Handle functions
-  const handlePointsSpent = (pointsSpent: number) => {
+  const handlePointsSpent = (pointsSpent) => {
     setUserPoints((prev) => ({
       ...prev,
       available: prev.available - pointsSpent,
@@ -474,7 +536,7 @@ const Shop = () => {
     }));
   };
 
-  const handleCheerSubmit = (e: React.FormEvent) => {
+  const handleCheerSubmit = (e) => {
     e.preventDefault();
     if (!selectedUser || !cheerPoints || !cheerMessage) {
       showNotification("Please fill in all fields", "error");
@@ -487,7 +549,9 @@ const Shop = () => {
       return;
     }
 
-    showNotification(`Cheer sent to ${mockUsers.find((u) => u.id === selectedUser)?.name}!`);
+    showNotification(
+      `Cheer sent to ${mockUsers.find((u) => u.id === selectedUser)?.name}!`,
+    );
     setSelectedUser("");
     setCheerPoints("");
     setCheerMessage("");
@@ -517,7 +581,9 @@ const Shop = () => {
 
       const itemCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
       showNotification(
-        `Order placed successfully! ${itemCount} item${itemCount > 1 ? "s" : ""} ordered for ${totalPoints} points.`,
+        `Order placed successfully! ${itemCount} item${
+          itemCount > 1 ? "s" : ""
+        } ordered for ${totalPoints} points.`,
       );
     } catch (error) {
       showNotification("Checkout failed. Please try again.", "error");
@@ -526,7 +592,7 @@ const Shop = () => {
     }
   };
 
-  const handleMoodSubmit = (e: React.FormEvent) => {
+  const handleMoodSubmit = (e) => {
     e.preventDefault();
     if (!selectedMood) {
       showNotification("Please select your mood", "error");
@@ -538,7 +604,7 @@ const Shop = () => {
     setMoodComment("");
   };
 
-  const getTransactionIcon = (type: string) => {
+  const getTransactionIcon = (type) => {
     switch (type) {
       case "earned":
         return <TrendingUp className="w-4 h-4 text-green-600" />;
@@ -570,41 +636,60 @@ const Shop = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700">Available Points</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-700">
+              Available Points
+            </CardTitle>
             <TrendingUp className="w-4 h-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{userPoints.available}</div>
+            <div className="text-2xl font-bold text-blue-900">
+              {userPoints.available}
+            </div>
             <p className="text-xs text-blue-600">Ready to spend</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700">Points Earned</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-700">
+              Points Earned
+            </CardTitle>
             <Award className="w-4 h-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{userPoints.earned}</div>
+            <div className="text-2xl font-bold text-blue-900">
+              {userPoints.earned}
+            </div>
             <p className="text-xs text-blue-600">Total lifetime</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700">Monthly Cheers</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-700">
+              Monthly Cheers
+            </CardTitle>
             <Heart className="w-4 h-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{userPoints.monthlyUsed}</div>
-            <p className="text-xs text-blue-600">of {userPoints.monthlyLimit} limit</p>
-            <Progress value={(userPoints.monthlyUsed / userPoints.monthlyLimit) * 100} className="mt-2" />
+            <div className="text-2xl font-bold text-blue-900">
+              {userPoints.monthlyUsed}
+            </div>
+            <p className="text-xs text-blue-600">
+              of {userPoints.monthlyLimit} limit
+            </p>
+            <Progress
+              value={(userPoints.monthlyUsed / userPoints.monthlyLimit) * 100}
+              className="mt-2"
+            />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700">Mood Status</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-700">
+              Mood Status
+            </CardTitle>
             <Smile className="w-4 h-4 text-blue-600" />
           </CardHeader>
           <CardContent>
@@ -638,12 +723,17 @@ const Shop = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-blue-900">Recent Cheers</CardTitle>
-          <CardDescription className="text-blue-600">Your latest peer recognition activity</CardDescription>
+          <CardDescription className="text-blue-600">
+            Your latest peer recognition activity
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {recentCheers.map((cheer) => (
-              <div key={cheer.id} className="flex items-center gap-4 p-3 rounded-lg border border-blue-200 bg-blue-50">
+              <div
+                key={cheer.id}
+                className="flex items-center gap-4 p-3 rounded-lg border border-blue-200 bg-blue-50"
+              >
                 <Avatar
                   src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=40"
                   fallback={cheer.from
@@ -674,13 +764,19 @@ const Shop = () => {
   const renderCheerPeer = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => setActiveView("dashboard")}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setActiveView("dashboard")}
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-blue-900">Cheer a Peer</h1>
-          <p className="text-blue-600">Recognize your colleagues with points and appreciation</p>
+          <p className="text-blue-600">
+            Recognize your colleagues with points and appreciation
+          </p>
         </div>
       </div>
 
@@ -692,14 +788,19 @@ const Shop = () => {
               Send Recognition
             </CardTitle>
             <CardDescription className="text-blue-600">
-              You have {userPoints.monthlyLimit - userPoints.monthlyUsed} points remaining this month (out of{" "}
+              You have{" "}
+              {userPoints.monthlyLimit - userPoints.monthlyUsed} points remaining
+              this month (out of{" "}
               {userPoints.monthlyLimit} monthly limit)
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCheerSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="search" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="search"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Search Colleagues
                 </label>
                 <div className="relative">
@@ -715,13 +816,17 @@ const Shop = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Select Colleague</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Select Colleague
+                </label>
                 <div className="grid gap-2 max-h-48 overflow-y-auto">
                   {filteredUsers.map((user) => (
                     <div
                       key={user.id}
                       className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        selectedUser === user.id ? "border-blue-500 bg-blue-50" : "hover:bg-gray-50 border-gray-200"
+                        selectedUser === user.id
+                          ? "border-blue-500 bg-blue-50"
+                          : "hover:bg-gray-50 border-gray-200"
                       }`}
                       onClick={() => setSelectedUser(user.id)}
                     >
@@ -744,7 +849,10 @@ const Shop = () => {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="points" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="points"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Points to Give (1-50)
                 </label>
                 <Input
@@ -757,7 +865,10 @@ const Shop = () => {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="message"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Recognition Message
                 </label>
                 <Textarea
@@ -780,7 +891,9 @@ const Shop = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-blue-900">Recognition Tips</CardTitle>
-            <CardDescription className="text-blue-600">Make your cheers more meaningful</CardDescription>
+            <CardDescription className="text-blue-600">
+              Make your cheers more meaningful
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
@@ -789,7 +902,8 @@ const Shop = () => {
                 <div>
                   <p className="font-medium text-blue-900">Be Specific</p>
                   <p className="text-sm text-blue-600">
-                    Mention exactly what they did well to make the recognition more meaningful.
+                    Mention exactly what they did well to make the recognition
+                    more meaningful.
                   </p>
                 </div>
               </div>
@@ -798,7 +912,8 @@ const Shop = () => {
                 <div>
                   <p className="font-medium text-blue-900">Timely Recognition</p>
                   <p className="text-sm text-blue-600">
-                    Send cheers soon after the great work happens for maximum impact.
+                    Send cheers soon after the great work happens for maximum
+                    impact.
                   </p>
                 </div>
               </div>
@@ -807,7 +922,8 @@ const Shop = () => {
                 <div>
                   <p className="font-medium text-blue-900">Point Guidelines</p>
                   <p className="text-sm text-blue-600">
-                    Small helps: 5-15 points • Great work: 15-30 points • Outstanding: 30-50 points
+                    Small helps: 5-15 points • Great work: 15-30 points •
+                    Outstanding: 30-50 points
                   </p>
                 </div>
               </div>
@@ -822,7 +938,11 @@ const Shop = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setActiveView("dashboard")}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setActiveView("dashboard")}
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
@@ -836,7 +956,12 @@ const Shop = () => {
             {userPoints.available} points available
           </Badge>
           {Object.keys(cart).length > 0 && (
-            <Button onClick={handleCheckout} disabled={isCheckingOut || getTotalCartPoints() > userPoints.available}>
+            <Button
+              onClick={handleCheckout}
+              disabled={
+                isCheckingOut || getTotalCartPoints() > userPoints.available
+              }
+            >
               {isCheckingOut ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -859,29 +984,34 @@ const Shop = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-blue-900">
               <ShoppingCart className="w-5 h-5" />
-              Shopping Cart ({Object.values(cart).reduce((sum, qty) => sum + qty, 0)} items)
+              Shopping Cart (
+              {Object.values(cart).reduce((sum, qty) => sum + qty, 0)} items)
             </CardTitle>
-            <CardDescription className="text-blue-600">Review your items before checkout</CardDescription>
+            <CardDescription className="text-blue-600">
+              Review your items before checkout
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {getCartItems().map(({ product, quantity }) => (
                 <div
-                  key={product!.id}
+                  key={product?.id}
                   className="flex items-center gap-4 p-3 rounded-lg border border-blue-200 bg-blue-50"
                 >
                   <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
                     <Gift className="w-6 h-6 text-blue-500" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-blue-900">{product!.name}</p>
-                    <p className="text-sm text-blue-600">{product!.pointsCost} pts each</p>
+                    <p className="font-medium text-blue-900">{product?.name}</p>
+                    <p className="text-sm text-blue-600">
+                      {product?.pointsCost} pts each
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => updateCartQuantity(product!.id, quantity - 1)}
+                      onClick={() => updateCartQuantity(product?.id, quantity - 1)}
                       className="h-8 w-8 p-0"
                     >
                       <Minus className="w-4 h-4" />
@@ -890,7 +1020,7 @@ const Shop = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => updateCartQuantity(product!.id, quantity + 1)}
+                      onClick={() => updateCartQuantity(product?.id, quantity + 1)}
                       className="h-8 w-8 p-0"
                     >
                       <Plus className="w-4 h-4" />
@@ -898,20 +1028,22 @@ const Shop = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeFromCart(product!.id)}
+                      onClick={() => removeFromCart(product?.id)}
                       className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                   <div className="text-right">
-                    <Badge>{product!.pointsCost * quantity} pts</Badge>
+                    <Badge>{product ? product.pointsCost * quantity : 0} pts</Badge>
                   </div>
                 </div>
               ))}
               <div className="border-t border-blue-200 pt-3 flex justify-between items-center">
                 <span className="font-semibold text-blue-900">Total:</span>
-                <Badge className="text-lg px-3 py-1">{getTotalCartPoints()} points</Badge>
+                <Badge className="text-lg px-3 py-1">
+                  {getTotalCartPoints()} points
+                </Badge>
               </div>
             </div>
           </CardContent>
@@ -929,7 +1061,11 @@ const Shop = () => {
             className="pl-10"
           />
         </div>
-        <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-48">
+        <Select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="w-48"
+        >
           {categories.map((category) => (
             <option key={category.value} value={category.value}>
               {category.label}
@@ -952,32 +1088,47 @@ const Shop = () => {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-lg text-blue-900">{product.name}</CardTitle>
+                  <CardTitle className="text-lg text-blue-900">
+                    {product.name}
+                  </CardTitle>
                   <div className="flex items-center gap-1 mt-1">
                     <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-sm text-blue-600">{product.rating}</span>
+                    <span className="text-sm text-blue-600">
+                      {product.rating}
+                    </span>
                   </div>
                 </div>
-                <Badge className="text-lg font-bold">{product.pointsCost} pts</Badge>
+                <Badge className="text-lg font-bold">
+                  {product.pointsCost} pts
+                </Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <CardDescription className="mb-4 text-blue-600">{product.description}</CardDescription>
+              <CardDescription className="mb-4 text-blue-600">
+                {product.description}
+              </CardDescription>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-blue-600">{product.inventory} in stock</span>
-                {cart[product.id] && <Badge variant="secondary">{cart[product.id]} in cart</Badge>}
+                <span className="text-sm text-blue-600">
+                  {product.inventory} in stock
+                </span>
+                {cart[product.id] && (
+                  <Badge variant="secondary">{cart[product.id]} in cart</Badge>
+                )}
               </div>
               <Button
                 onClick={() => addToCart(product.id)}
-                disabled={product.pointsCost > userPoints.available || product.inventory === 0}
+                disabled={
+                  product.pointsCost > userPoints.available ||
+                  product.inventory === 0
+                }
                 className="w-full"
               >
                 <Gift className="w-4 h-4 mr-2" />
                 {product.pointsCost > userPoints.available
                   ? "Insufficient Points"
                   : product.inventory === 0
-                    ? "Out of Stock"
-                    : "Add to Cart"}
+                  ? "Out of Stock"
+                  : "Add to Cart"}
               </Button>
             </CardContent>
           </Card>
@@ -988,7 +1139,9 @@ const Shop = () => {
         <div className="text-center py-12">
           <Gift className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">No products found</h3>
-          <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+          <p className="text-gray-600">
+            Try adjusting your search or filter criteria
+          </p>
         </div>
       )}
     </div>
@@ -1011,34 +1164,48 @@ const Shop = () => {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700">Available Points</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-700">
+              Available Points
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{userPoints.available}</div>
+            <div className="text-2xl font-bold text-blue-900">
+              {userPoints.available}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700">Total Earned</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-700">
+              Total Earned
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{userPoints.earned}</div>
+            <div className="text-2xl font-bold text-blue-900">
+              {userPoints.earned}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700">Total Spent</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-700">
+              Total Spent
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{userPoints.spent}</div>
+            <div className="text-2xl font-bold text-blue-900">
+              {userPoints.spent}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700">Monthly Usage</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-700">
+              Monthly Usage
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-900">
@@ -1055,7 +1222,9 @@ const Shop = () => {
             <Calendar className="w-5 h-5" />
             Transaction History
           </CardTitle>
-          <CardDescription className="text-blue-600">Your complete points activity log</CardDescription>
+          <CardDescription className="text-blue-600">
+            Your complete points activity log
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -1068,12 +1237,22 @@ const Shop = () => {
                   {getTransactionIcon(transaction.type)}
                 </div>
 
-                {transaction.avatar && <Avatar src={transaction.avatar} fallback="U" className="h-10 w-10" />}
+                {transaction.avatar && (
+                  <Avatar src={transaction.avatar} fallback="U" className="h-10 w-10" />
+                )}
 
                 <div className="flex-1">
-                  <p className="font-medium text-blue-900">{transaction.description}</p>
-                  {transaction.message && <p className="text-sm text-blue-600 italic">"{transaction.message}"</p>}
-                  <p className="text-xs text-blue-600 mt-1">{formatDate(transaction.date)}</p>
+                  <p className="font-medium text-blue-900">
+                    {transaction.description}
+                  </p>
+                  {transaction.message && (
+                    <p className="text-sm text-blue-600 italic">
+                      "{transaction.message}"
+                    </p>
+                  )}
+                  <p className="text-xs text-blue-600 mt-1">
+                    {formatDate(transaction.date)}
+                  </p>
                 </div>
 
                 <div className="text-right">
@@ -1117,7 +1296,9 @@ const Shop = () => {
           <CardContent>
             <form onSubmit={handleMoodSubmit} className="space-y-6">
               <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">How are you feeling?</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  How are you feeling?
+                </label>
                 <div className="grid grid-cols-1 gap-3">
                   {moods.map((mood) => (
                     <div
@@ -1132,7 +1313,9 @@ const Shop = () => {
                       <span className="text-3xl">{mood.emoji}</span>
                       <div>
                         <p className="font-medium">{mood.label}</p>
-                        <p className="text-sm text-gray-600">I'm feeling {mood.label.toLowerCase()} today</p>
+                        <p className="text-sm text-gray-600">
+                          I'm feeling {mood.label.toLowerCase()} today
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -1140,7 +1323,10 @@ const Shop = () => {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="comment" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="comment"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Optional Comment
                 </label>
                 <Textarea
@@ -1167,7 +1353,9 @@ const Shop = () => {
                 <TrendingUp className="w-5 h-5 text-blue-600" />
                 Mood Insights
               </CardTitle>
-              <CardDescription className="text-blue-600">Your mood trends this week</CardDescription>
+              <CardDescription className="text-blue-600">
+                Your mood trends this week
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -1199,15 +1387,37 @@ const Shop = () => {
                 <Calendar className="w-5 h-5 text-blue-600" />
                 Recent Check-ins
               </CardTitle>
-              <CardDescription className="text-blue-600">Your mood history</CardDescription>
+              <CardDescription className="text-blue-600">
+                Your mood history
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {[
-                  { date: "2025-06-23", mood: "😊", label: "Good", comment: "Great team meeting today!" },
-                  { date: "2025-06-22", mood: "😄", label: "Excellent", comment: "Finished the project successfully" },
-                  { date: "2025-06-21", mood: "😐", label: "Okay", comment: "Busy day with lots of meetings" },
-                  { date: "2025-06-20", mood: "😊", label: "Good", comment: "Good progress on tasks" },
+                  {
+                    date: "2025-06-23",
+                    mood: "😊",
+                    label: "Good",
+                    comment: "Great team meeting today!",
+                  },
+                  {
+                    date: "2025-06-22",
+                    mood: "😄",
+                    label: "Excellent",
+                    comment: "Finished the project successfully",
+                  },
+                  {
+                    date: "2025-06-21",
+                    mood: "😐",
+                    label: "Okay",
+                    comment: "Busy day with lots of meetings",
+                  },
+                  {
+                    date: "2025-06-20",
+                    mood: "😊",
+                    label: "Good",
+                    comment: "Good progress on tasks",
+                  },
                   {
                     date: "2025-06-19",
                     mood: "😄",
@@ -1215,7 +1425,10 @@ const Shop = () => {
                     comment: "Received great feedback from client",
                   },
                 ].map((entry, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200"
+                  >
                     <span className="text-2xl">{entry.mood}</span>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
@@ -1227,7 +1440,9 @@ const Shop = () => {
                           })}
                         </span>
                       </div>
-                      {entry.comment && <p className="text-sm text-blue-600 mt-1">{entry.comment}</p>}
+                      {entry.comment && (
+                        <p className="text-sm text-blue-600 mt-1">{entry.comment}</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1240,111 +1455,149 @@ const Shop = () => {
   );
 
   // Notification state and functions (moved inside Shop)
-  const [notification, setNotification] = React.useState<{
-    message: string;
-    type: string;
-    onOk?: () => void;
-    onCancel?: () => void;
-  } | null>(null);
+  const [notification, setNotification] = useState(null);
 
   const showNotification = (
-    message: string,
+    message,
     type = "success",
-    onOk?: () => void,
-    onCancel?: () => void
+    onOk,
+    onCancel
   ) => {
     setNotification({ message, type, onOk, onCancel });
   };
 
   const closeNotification = () => setNotification(null);
 
-  // Main render function
   const renderContent = () => {
     switch (activeView) {
+      case "dashboard":
+        return renderDashboard();
+      case "mood":
+        return renderMoodTracker();
       case "cheer":
         return renderCheerPeer();
       case "shop":
         return renderRewardsShop();
       case "points":
         return renderPointsHistory();
-      case "mood":
-        return renderMoodTracker();
+      case "pulseSurvey":
+        return <PulseSurvey />;
+      case "employeeServices":
+        return <EmployeeServicesCenter />;
+      case "tailoredGuidance":
+        return <TailoredGuidance />;
       default:
         return renderDashboard();
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-      {/* Notification Modal */}
-      {notification && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div
-            className="relative rounded-xl shadow-lg max-w-full w-auto flex flex-col items-center border-4 border-black-100 p-0"
-            style={{
-              background: 'linear-gradient(135deg,rgba(18, 83, 223, 0.81) 60%, #fff 100%)', // blue and white gradient
-              minWidth: 300,
-              aspectRatio: '1920 / 547', // Matches your image's aspect ratio
-            }}
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-blue-100 flex flex-col">
+        <div className="p-6">
+          <div className="font-bold text-lg text-blue-900 mb-4">My Pulse</div>
+          <button
+            className="flex items-center w-full text-left text-blue-900 font-semibold focus:outline-none"
+            onClick={() => setPulseOpen(!pulseOpen)}
           >
-            {/* Remove overlay and image */}
-            <div className="relative z-10 flex flex-col items-center p-8 w-full">
-              <div className="flex flex-col items-center w-full">
-                <h2 className="text-4xl font-extrabold text-white text-center mb-0" style={{letterSpacing: '0.05em'}}>THE SUITE</h2>
-                <h2 className="text-4xl font-extrabold text-white text-center mb-6" style={{letterSpacing: '0.05em'}}>POD</h2>
-              </div>
-              <p className="text-white text-center mb-6">{notification.message}</p>
-              <div className="flex gap-4">
+            <span className="mr-2"></span> My Pulse Dashboard
+            <span className="ml-auto text-blue-700">{pulseOpen ? "▲" : "▼"}</span>
+          </button>
+          {pulseOpen && (
+            <ul className="mt-2 ml-4 space-y-1">
+              <li>
                 <button
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 focus:outline-none"
-                  onClick={() => {
-                    notification.onOk?.();
-                    closeNotification();
-                  }}
+                  className={`block w-full text-left py-1 px-2 rounded ${
+                    activeView === "mood"
+                      ? "bg-blue-100 text-blue-900"
+                      : "text-gray-800 hover:bg-blue-50"
+                  }`}
+                  onClick={() => setActiveView("mood")}
                 >
-                  OK
+                  Mood Tracker
                 </button>
+              </li>
+              <li>
                 <button
-                  className="px-4 py-2 bg-gray-300 text-black-800 border border-gray-500 rounded-lg font-semibold hover:bg-gray-400 focus:outline-none"
-                  onClick={() => {
-                    notification.onCancel?.();
-                    closeNotification();
-                  }}
+                  className={`block w-full text-left py-1 px-2 rounded ${
+                    activeView === "cheer"
+                      ? "bg-blue-100 text-blue-900"
+                      : "text-gray-800 hover:bg-blue-50"
+                  }`}
+                  onClick={() => setActiveView("cheer")}
                 >
-                  Cancel
+                  Cheer a Peer
                 </button>
-              </div>
-            </div>
-          </div>
+              </li>
+              <li>
+                <button
+                  className={`block w-full text-left py-1 px-2 rounded ${
+                    activeView === "shop"
+                      ? "bg-blue-100 text-blue-900"
+                      : "text-gray-800 hover:bg-blue-50"
+                  }`}
+                  onClick={() => setActiveView("shop")}
+                >
+                  Rewards Center
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`block w-full text-left py-1 px-2 rounded ${
+                    activeView === "points"
+                      ? "bg-blue-100 text-blue-900"
+                      : "text-gray-800 hover:bg-blue-50"
+                  }`}
+                  onClick={() => setActiveView("points")}
+                >
+                  Transactions
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`block w-full text-left py-1 px-2 rounded ${
+                    activeView === "pulseSurvey"
+                      ? "bg-blue-100 text-blue-900"
+                      : "text-gray-800 hover:bg-blue-50"
+                  }`}
+                  onClick={() => setActiveView("pulseSurvey")}
+                >
+                  Anonymous Pulse Survey
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`block w-full text-left py-1 px-2 rounded ${
+                    activeView === "employeeServices"
+                      ? "bg-blue-100 text-blue-900"
+                      : "text-gray-800 hover:bg-blue-50"
+                  }`}
+                  onClick={() => setActiveView("employeeServices")}
+                >
+                  Employee Services Center
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`block w-full text-left py-1 px-2 rounded ${
+                    activeView === "tailoredGuidance"
+                      ? "bg-blue-100 text-blue-900"
+                      : "text-gray-800 hover:bg-blue-50"
+                  }`}
+                  onClick={() => setActiveView("tailoredGuidance")}
+                >
+                  Tailored Guidance
+                </button>
+              </li>
+            </ul>
+          )}
         </div>
-      )}
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b border-blue-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">MP</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-blue-900">My Pulse</p>
-                  <p className="text-xs text-blue-600">Suitelifer</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="text-sm">
-                {userPoints.available} points
-              </Badge>
-              <Avatar src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=32" fallback="U" className="h-8 w-8" />
-            </div>
-          </div>
-        </div>
-      </nav>
-
+      </aside>
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{renderContent()}</main>
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderContent()}
+      </main>
     </div>
   );
 };
