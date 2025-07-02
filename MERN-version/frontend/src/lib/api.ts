@@ -157,6 +157,11 @@ class ApiClient {
     return response.data.data!;
   }
 
+  async getUsersForCheering(): Promise<User[]> {
+    const response = await this.client.get<ApiResponse<User[]>>('/api/users/for-cheering');
+    return response.data.data!;
+  }
+
   // Points endpoints
   async getPointsBalance(): Promise<UserPoints> {
     const response = await this.client.get<ApiResponse<UserPoints>>('/api/points/balance');
@@ -346,6 +351,27 @@ class ApiClient {
 
   async resetMonthlyLimits(): Promise<{ modifiedCount: number }> {
     const response = await this.client.post<ApiResponse<{ modifiedCount: number }>>('/api/points/admin/reset-monthly');
+    return response.data.data!;
+  }
+
+  // Points Scheduler Management
+  async getSchedulerStatus(): Promise<any> {
+    const response = await this.client.get<ApiResponse<any>>('/api/admin/scheduler/status');
+    return response.data.data!;
+  }
+
+  async startScheduler(): Promise<any> {
+    const response = await this.client.post<ApiResponse<any>>('/api/admin/scheduler/start');
+    return response.data.data!;
+  }
+
+  async stopScheduler(): Promise<any> {
+    const response = await this.client.post<ApiResponse<any>>('/api/admin/scheduler/stop');
+    return response.data.data!;
+  }
+
+  async triggerManualDistribution(): Promise<any> {
+    const response = await this.client.post<ApiResponse<any>>('/api/admin/scheduler/distribute');
     return response.data.data!;
   }
 }

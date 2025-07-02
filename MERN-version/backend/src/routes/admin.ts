@@ -3,6 +3,7 @@ import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { User, UserPoints, Transaction, Product, Order, Mood } from '../models/index.js';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, subDays, startOfDay, endOfDay } from 'date-fns';
 import mongoose from 'mongoose';
+import { pointsScheduler } from '../services/pointsScheduler.js';
 
 const router = Router();
 
@@ -928,6 +929,104 @@ router.get('/analytics/summary', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch analytics'
+    });
+  }
+});
+
+// ============================================
+// POINTS SCHEDULER MANAGEMENT ROUTES
+// ============================================
+
+// Get scheduler status and statistics
+router.get('/scheduler/status', async (req, res) => {
+  try {
+    const status = pointsScheduler.getStatus();
+    const stats = await pointsScheduler.getStats();
+    
+    res.json({
+      status: 'success',
+      data: {
+        scheduler: status,
+        statistics: stats
+      }
+    });
+  } catch (error) {
+    console.error('Scheduler status error:', error);
+    res.status(500).json({
+      status: 'error', 
+      message: 'Failed to get scheduler status',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Start the automatic points scheduler
+router.post('/scheduler/start', (req, res) => {
+  try {
+    pointsScheduler.start();
+    
+    res.json({
+      status: 'success',
+      message: 'Points scheduler started successfully',
+      data: pointsScheduler.getStatus()
+    });
+  } catch (error) {
+    console.error('Scheduler start error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to start scheduler',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Stop the automatic points scheduler
+router.post('/scheduler/stop', (req, res) => {
+  try {
+    pointsScheduler.stop();
+    
+    res.json({
+      status: 'success',
+      message: 'Points scheduler stopped successfully',
+      data: pointsScheduler.getStatus()
+    });
+  } catch (error) {
+    console.error('Scheduler stop error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to stop scheduler',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Trigger manual point distribution (for testing)
+router.post('/scheduler/distribute', async (req, res) => {
+  try {
+    const result = await pointsScheduler.manualDistribution();
+    
+    if (result.success) {
+      res.json({
+        status: 'success',
+        message: `Successfully distributed points to ${result.usersUpdated} users`,
+        data: {
+          usersUpdated: result.usersUpdated,
+          timestamp: new Date()
+        }
+      });
+    } else {
+      res.status(500).json({
+        status: 'error',
+        message: 'Manual distribution failed',
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Manual distribution error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to distribute points',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

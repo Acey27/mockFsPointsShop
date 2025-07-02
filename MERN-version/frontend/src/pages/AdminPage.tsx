@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ProductManagement from '../components/ProductManagement';
 import {
   UsersIcon,
   CubeIcon,
@@ -11,12 +12,17 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon
+  EyeIcon,
+  ClockIcon,
+  PlayIcon,
+  StopIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 
 const AdminPage: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'products' | 'orders' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'products' | 'orders' | 'analytics' | 'system'>('dashboard');
+  const queryClient = useQueryClient();
 
   // Redirect if not admin
   if (user?.role !== 'admin') {
@@ -36,7 +42,7 @@ const AdminPage: React.FC = () => {
     enabled: activeTab === 'users' || activeTab === 'dashboard',
   });
 
-  const { data: products, isLoading: productsLoading } = useQuery({
+  const { data: products } = useQuery({
     queryKey: ['admin-products'],
     queryFn: () => apiClient.getProducts({}),
     enabled: activeTab === 'products' || activeTab === 'dashboard',
@@ -48,12 +54,45 @@ const AdminPage: React.FC = () => {
     enabled: activeTab === 'orders' || activeTab === 'dashboard',
   });
 
+  // Scheduler status query
+  const { data: schedulerStatus, isLoading: schedulerStatusLoading } = useQuery({
+    queryKey: ['scheduler-status'],
+    queryFn: () => apiClient.getSchedulerStatus(),
+    enabled: activeTab === 'system',
+    refetchInterval: 5000, // Refetch every 5 seconds when on system tab
+  });
+
+  // Scheduler control mutations
+  const startSchedulerMutation = useMutation({
+    mutationFn: () => apiClient.startScheduler(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scheduler-status'] });
+    },
+  });
+
+  const stopSchedulerMutation = useMutation({
+    mutationFn: () => apiClient.stopScheduler(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scheduler-status'] });
+    },
+  });
+
+  const manualDistributionMutation = useMutation({
+    mutationFn: () => apiClient.triggerManualDistribution(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scheduler-status'] });
+      // Also refresh users data to see updated points
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+  });
+
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: ChartBarIcon },
     { id: 'users', label: 'Users', icon: UsersIcon },
     { id: 'products', label: 'Products', icon: CubeIcon },
     { id: 'orders', label: 'Orders', icon: Cog6ToothIcon },
     { id: 'analytics', label: 'Analytics', icon: ChartBarIcon },
+    { id: 'system', label: 'System', icon: ClockIcon },
   ];
 
   const renderDashboard = () => (
@@ -262,60 +301,144 @@ const AdminPage: React.FC = () => {
   );
 
   const renderProducts = () => (
+    <ProductManagement />
+  );
+
+  const renderSystem = () => (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-blue-900">Product Management</h3>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-          <PlusIcon className="w-4 h-4" />
-          <span>Add Product</span>
-        </button>
+      <div>
+        <h3 className="text-xl font-semibold text-blue-900">System Management</h3>
+        <p className="text-blue-600">Manage automated point distribution and system settings</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {productsLoading ? (
-          <div className="col-span-full flex justify-center py-8">
-            <LoadingSpinner size="lg" text="Loading products..." />
+      {/* Points Scheduler Card */}
+      <div className="bg-white rounded-lg shadow-sm border border-blue-100 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <ClockIcon className="w-6 h-6 text-blue-600" />
+            <div>
+              <h4 className="text-lg font-semibold text-blue-900">Points Scheduler</h4>
+              <p className="text-sm text-blue-600">Automatic point distribution every minute</p>
+            </div>
           </div>
-        ) : (
-          products?.data?.map((product: any) => (
-            <div key={product._id} className="bg-white rounded-lg shadow-sm border border-blue-100 overflow-hidden">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-48 object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik02MCA2MEgxNDBWMTQwSDYwVjYwWiIgZmlsbD0iI0Q1RDVENSIvPgo8L3N2Zz4K';
-                }}
-              />
-              <div className="p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">{product.name}</h4>
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-lg font-bold text-blue-900">{product.pointsCost} pts</span>
-                  <span className="text-sm text-gray-500">Stock: {product.inventory}</span>
+          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+            schedulerStatus?.isRunning
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {schedulerStatusLoading ? 'Loading...' : schedulerStatus?.isRunning ? 'Running' : 'Stopped'}
+          </div>
+        </div>
+
+        {/* Scheduler Statistics */}
+        {schedulerStatus && (
+          <div className="grid gap-4 md:grid-cols-3 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-700">Total Distributions</p>
+                  <p className="text-2xl font-bold text-blue-900">{schedulerStatus.totalDistributions || 0}</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    product.isActive
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {product.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                  <div className="flex space-x-2">
-                    <button className="text-blue-600 hover:text-blue-900">
-                      <PencilIcon className="w-4 h-4" />
-                    </button>
-                    <button className="text-red-600 hover:text-red-900">
-                      <TrashIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                <BoltIcon className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-          ))
+
+            <div className="bg-green-50 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-700">Last Distribution</p>
+                  <p className="text-sm font-bold text-green-900">
+                    {schedulerStatus.lastDistribution 
+                      ? new Date(schedulerStatus.lastDistribution).toLocaleString()
+                      : 'Never'
+                    }
+                  </p>
+                </div>
+                <ClockIcon className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-700">Next Distribution</p>
+                  <p className="text-sm font-bold text-purple-900">
+                    {schedulerStatus.isRunning ? 'Within 1 minute' : 'Scheduler stopped'}
+                  </p>
+                </div>
+                <PlayIcon className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
         )}
+
+        {/* Scheduler Controls */}
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => startSchedulerMutation.mutate()}
+            disabled={schedulerStatus?.isRunning || startSchedulerMutation.isPending}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              schedulerStatus?.isRunning || startSchedulerMutation.isPending
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+          >
+            <PlayIcon className="w-4 h-4" />
+            <span>{startSchedulerMutation.isPending ? 'Starting...' : 'Start Scheduler'}</span>
+          </button>
+
+          <button
+            onClick={() => stopSchedulerMutation.mutate()}
+            disabled={!schedulerStatus?.isRunning || stopSchedulerMutation.isPending}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              !schedulerStatus?.isRunning || stopSchedulerMutation.isPending
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-red-600 text-white hover:bg-red-700'
+            }`}
+          >
+            <StopIcon className="w-4 h-4" />
+            <span>{stopSchedulerMutation.isPending ? 'Stopping...' : 'Stop Scheduler'}</span>
+          </button>
+
+          <button
+            onClick={() => manualDistributionMutation.mutate()}
+            disabled={manualDistributionMutation.isPending}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
+          >
+            <BoltIcon className="w-4 h-4" />
+            <span>{manualDistributionMutation.isPending ? 'Distributing...' : 'Manual Distribution'}</span>
+          </button>
+        </div>
+
+        {/* Error Messages */}
+        {(startSchedulerMutation.error || stopSchedulerMutation.error || manualDistributionMutation.error) && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800 text-sm">
+              Error: {
+                startSchedulerMutation.error?.message ||
+                stopSchedulerMutation.error?.message ||
+                manualDistributionMutation.error?.message
+              }
+            </p>
+          </div>
+        )}
+
+        {/* Success Messages */}
+        {(startSchedulerMutation.isSuccess || stopSchedulerMutation.isSuccess || manualDistributionMutation.isSuccess) && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800 text-sm">
+              {startSchedulerMutation.isSuccess && 'Scheduler started successfully!'}
+              {stopSchedulerMutation.isSuccess && 'Scheduler stopped successfully!'}
+              {manualDistributionMutation.isSuccess && 'Manual distribution completed successfully!'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Additional System Settings Placeholder */}
+      <div className="bg-white rounded-lg shadow-sm border border-blue-100 p-6">
+        <h4 className="text-lg font-semibold text-blue-900 mb-4">Additional Settings</h4>
+        <p className="text-gray-600">More system management features coming soon...</p>
       </div>
     </div>
   );
@@ -328,6 +451,8 @@ const AdminPage: React.FC = () => {
         return renderUsers();
       case 'products':
         return renderProducts();
+      case 'system':
+        return renderSystem();
       case 'orders':
       case 'analytics':
         return (

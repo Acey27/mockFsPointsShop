@@ -5,6 +5,30 @@ import { validateObjectId } from '../utils/validation.js';
 
 const router = Router();
 
+// Get users for cheering (authenticated users only) - limited info
+router.get('/for-cheering', requireAuth, async (req, res) => {
+  try {
+    const users = await User.find({ 
+      isActive: true,
+      _id: { $ne: req.user!._id } // Exclude current user
+    })
+      .select('name email department')
+      .sort({ name: 1 })
+      .limit(50); // Limit to 50 users for performance
+
+    return res.json({
+      status: 'success',
+      data: users
+    });
+  } catch (error) {
+    console.error('Users for cheering error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Server error' 
+    });
+  }
+});
+
 // Get all users (admin only) - for frontend compatibility
 router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
@@ -284,6 +308,44 @@ router.patch('/:userId', requireAdmin, async (req, res) => {
   }
 });
 
+// Admin routes - Update user role
+router.patch('/:userId/role', requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (!userId || !validateObjectId(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    if (!role || !['user', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Must be either "user" or "admin"' });
+    }
+
+    // Prevent admin from changing their own role
+    if (userId === req.user!.id) {
+      return res.status(400).json({ message: 'Cannot change your own role' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.role = role;
+    await user.save();
+
+    const updatedUser = await User.findById(userId).select('-password');
+    return res.json({ 
+      status: 'success',
+      message: `User role updated to ${role} successfully`,
+      data: { user: updatedUser }
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Admin routes - Delete user
 router.delete('/:userId', requireAdmin, async (req, res) => {
   try {
@@ -313,4 +375,5 @@ router.delete('/:userId', requireAdmin, async (req, res) => {
   }
 });
 
+// Get users for cheering (authenticated users only) - limited info
 export default router;

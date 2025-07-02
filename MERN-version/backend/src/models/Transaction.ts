@@ -3,6 +3,7 @@ import { IUser } from './User.js';
 
 export interface ITransaction extends Document {
   _id: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId | IUser; // Legacy field for backward compatibility
   fromUserId?: mongoose.Types.ObjectId | IUser;
   toUserId?: mongoose.Types.ObjectId | IUser;
   type: 'earned' | 'spent' | 'given' | 'received' | 'admin_grant' | 'admin_deduct';
@@ -38,6 +39,12 @@ export interface TransactionModel extends Model<ITransaction> {
 }
 
 const transactionSchema = new Schema<ITransaction, TransactionModel>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+    // Legacy field for backward compatibility
+  },
   fromUserId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -93,10 +100,10 @@ transactionSchema.index({ toUserId: 1, createdAt: -1 });
 transactionSchema.index({ type: 1, createdAt: -1 });
 transactionSchema.index({ createdAt: -1 });
 
-// Validation: Either fromUserId or toUserId must be present (or both for transfers)
+// Validation: Either userId (legacy), fromUserId, or toUserId must be present
 transactionSchema.pre('validate', function(next: any) {
-  if (!this.fromUserId && !this.toUserId) {
-    const error = new Error('Either fromUserId or toUserId must be specified');
+  if (!this.userId && !this.fromUserId && !this.toUserId) {
+    const error = new Error('Either userId, fromUserId, or toUserId must be specified');
     return next(error);
   }
   next();
@@ -111,6 +118,7 @@ transactionSchema.statics.findByUserId = function(
   
   const query: any = {
     $or: [
+      { userId: userId }, // Legacy field
       { fromUserId: userId },
       { toUserId: userId }
     ]

@@ -42,20 +42,37 @@ router.get('/history', requireAuth, async (req, res) => {
     const skip = (page - 1) * limit;
     const type = req.query.type as string; // 'earned' | 'spent'
 
-    let query: any = { userId: req.user!._id };
+    // Build query to find transactions where user is either sender, receiver, or legacy userId
+    let baseQuery: any = {
+      $or: [
+        { fromUserId: req.user!._id },
+        { toUserId: req.user!._id },
+        // Support legacy transactions with userId field
+        { userId: req.user!._id }
+      ]
+    };
+    
+    let query: any = baseQuery;
     
     if (type === 'earned') {
-      query.type = { $in: ['earned', 'bonus', 'refund'] };
+      query = {
+        ...baseQuery,
+        type: { $in: ['earned', 'received', 'bonus', 'refund', 'admin_grant'] }
+      };
     } else if (type === 'spent') {
-      query.type = { $in: ['spent', 'purchase'] };
+      query = {
+        ...baseQuery,
+        type: { $in: ['spent', 'given', 'purchase', 'admin_deduct'] }
+      };
     }
 
     const transactions = await Transaction.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('relatedOrderId', 'orderNumber status')
-      .populate('relatedProductId', 'name');
+      .populate('fromUserId', 'name email department')
+      .populate('toUserId', 'name email department')
+      .populate('userId', 'name email department');
 
     const total = await Transaction.countDocuments(query);
 
@@ -69,6 +86,7 @@ router.get('/history', requireAuth, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('History endpoint error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 });
@@ -81,20 +99,37 @@ router.get('/transactions', requireAuth, async (req, res) => {
     const skip = (page - 1) * limit;
     const type = req.query.type as string; // 'earned' | 'spent'
 
-    let query: any = { userId: req.user!._id };
+    // Build query to find transactions where user is either sender, receiver, or legacy userId
+    let baseQuery: any = {
+      $or: [
+        { fromUserId: req.user!._id },
+        { toUserId: req.user!._id },
+        // Support legacy transactions with userId field
+        { userId: req.user!._id }
+      ]
+    };
+    
+    let query: any = baseQuery;
     
     if (type === 'earned') {
-      query.type = { $in: ['earned', 'bonus', 'refund'] };
+      query = {
+        ...baseQuery,
+        type: { $in: ['earned', 'received', 'bonus', 'refund', 'admin_grant'] }
+      };
     } else if (type === 'spent') {
-      query.type = { $in: ['spent', 'purchase'] };
+      query = {
+        ...baseQuery,
+        type: { $in: ['spent', 'given', 'purchase', 'admin_deduct'] }
+      };
     }
 
     const transactions = await Transaction.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('relatedOrderId', 'orderNumber status')
-      .populate('relatedProductId', 'name');
+      .populate('fromUserId', 'name email department')
+      .populate('toUserId', 'name email department')
+      .populate('userId', 'name email department');
 
     const total = await Transaction.countDocuments(query);
 
@@ -109,10 +144,154 @@ router.get('/transactions', requireAuth, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Transactions endpoint error:', error);
     return res.status(500).json({ 
       status: 'error',
       message: 'Server error',
       error: 'Failed to fetch transactions'
+    });
+  }
+});
+
+// Cheer a peer - Frontend compatible endpoint
+router.post('/cheer', requireAuth, async (req, res) => {
+  try {
+    const { toUserId, amount, message } = req.body;
+    const fromUserId = req.user!._id;
+
+    // Validation
+    if (!toUserId || !validateObjectId(toUserId)) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Invalid recipient ID' 
+      });
+    }
+
+    const pointsToSend = amount || 10; // Default to 10 points
+    if (pointsToSend <= 0 || pointsToSend > 100) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Amount must be between 1 and 100 points' 
+      });
+    }
+
+    if (fromUserId.toString() === toUserId) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Cannot send points to yourself' 
+      });
+    }
+
+    // Check if recipient exists
+    const recipient = await User.findById(toUserId);
+    if (!recipient || !recipient.isActive) {
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'Recipient not found or inactive' 
+      });
+    }
+
+    // Get sender's points
+    const senderPoints = await UserPoints.findOne({ userId: fromUserId });
+    if (!senderPoints) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Sender points record not found' 
+      });
+    }
+
+    // Check monthly cheer limit
+    const currentMonth = new Date();
+    const lastReset = senderPoints.lastMonthlyReset;
+    const isNewMonth = !lastReset || 
+      lastReset.getMonth() !== currentMonth.getMonth() || 
+      lastReset.getFullYear() !== currentMonth.getFullYear();
+
+    if (isNewMonth) {
+      senderPoints.monthlyCheerUsed = 0;
+      senderPoints.lastMonthlyReset = currentMonth;
+    }
+
+    if (senderPoints.monthlyCheerUsed + pointsToSend > senderPoints.monthlyCheerLimit) {
+      const remaining = senderPoints.monthlyCheerLimit - senderPoints.monthlyCheerUsed;
+      return res.status(400).json({ 
+        status: 'error',
+        message: `Monthly cheer limit exceeded. You can send ${remaining} more points this month.` 
+      });
+    }
+
+    // Get or create recipient's points
+    let recipientPoints = await UserPoints.findOne({ userId: toUserId });
+    if (!recipientPoints) {
+      recipientPoints = await UserPoints.createForUser(toUserId) as any;
+    }
+
+    // Start transaction
+    const session = await UserPoints.startSession();
+    session.startTransaction();
+
+    try {
+      // Update sender's points
+      senderPoints.monthlyCheerUsed += pointsToSend;
+      await senderPoints.save({ session });
+
+      // Update recipient's points
+      if (recipientPoints) {
+        recipientPoints.availablePoints += pointsToSend;
+        recipientPoints.totalEarned += pointsToSend;
+        await recipientPoints.save({ session });
+      }
+
+      // Create transaction records
+      const senderTransaction = new Transaction({
+        fromUserId: fromUserId,
+        toUserId: toUserId,
+        type: 'given',
+        amount: pointsToSend,
+        description: `Cheered ${recipient.name}`,
+        message: message || '',
+        metadata: {
+          recipientId: toUserId,
+          recipientName: recipient.name,
+          type: 'cheer'
+        }
+      });
+
+      const recipientTransaction = new Transaction({
+        fromUserId: fromUserId,
+        toUserId: toUserId,
+        type: 'received',
+        amount: pointsToSend,
+        description: `Received cheer from ${req.user!.name}`,
+        message: message || '',
+        metadata: {
+          senderId: fromUserId,
+          senderName: req.user!.name,
+          type: 'cheer'
+        }
+      });
+
+      await senderTransaction.save({ session });
+      await recipientTransaction.save({ session });
+
+      await session.commitTransaction();
+
+      return res.json({
+        status: 'success',
+        message: `Successfully cheered ${recipient.name} with ${pointsToSend} points!`,
+        data: [senderTransaction, recipientTransaction]
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  } catch (error) {
+    console.error('Cheer error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Server error' 
     });
   }
 });

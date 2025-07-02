@@ -349,7 +349,7 @@ router.get('/orders/:orderId', requireAuth, async (req, res) => {
 });
 
 // Admin routes - Get all products
-router.get('/admin/products', requireAdmin, async (req, res) => {
+router.get('/admin/products', requireAuth, requireAdmin, async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const page = Math.max(parseInt(req.query.page as string) || 1, 1);
@@ -378,7 +378,8 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     const total = await Product.countDocuments(query);
 
     return res.json({
-      products,
+      status: 'success',
+      data: products,
       pagination: {
         page,
         limit,
@@ -392,7 +393,7 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
 });
 
 // Admin routes - Create product
-router.post('/admin/products', requireAdmin, async (req, res) => {
+router.post('/admin/products', requireAuth, requireAdmin, async (req, res) => {
   try {
     const {
       name,
@@ -404,12 +405,42 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
       isActive = true
     } = req.body;
 
+    // Validation
+    if (!name || !description || !pointsCost || !category || !image || inventory === undefined) {
+      return res.status(400).json({ 
+        message: 'All required fields must be provided',
+        required: ['name', 'description', 'pointsCost', 'category', 'image', 'inventory']
+      });
+    }
+
+    if (typeof pointsCost !== 'number' || pointsCost < 1) {
+      return res.status(400).json({ message: 'Points cost must be a positive number' });
+    }
+
+    if (typeof inventory !== 'number' || inventory < 0) {
+      return res.status(400).json({ message: 'Inventory must be a non-negative number' });
+    }
+
+    const validCategories = ['apparel', 'accessories', 'electronics', 'office', 'giftcards', 'experiences', 'food', 'books'];
+    if (!validCategories.includes(category.toLowerCase())) {
+      return res.status(400).json({ 
+        message: 'Invalid category',
+        validCategories
+      });
+    }
+
+    if (!/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(image)) {
+      return res.status(400).json({ 
+        message: 'Image must be a valid URL ending with jpg, jpeg, png, gif, or webp' 
+      });
+    }
+
     const product = new Product({
-      name,
-      description,
+      name: name.trim(),
+      description: description.trim(),
       pointsCost,
-      category,
-      image,
+      category: category.toLowerCase(),
+      image: image.trim(),
       inventory,
       isActive
     });
@@ -417,16 +448,24 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
     await product.save();
 
     return res.status(201).json({
+      status: 'success',
       message: 'Product created successfully',
-      product
+      data: product
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Create product error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation error',
+        errors: Object.values(error.errors).map((err: any) => err.message)
+      });
+    }
     return res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Admin routes - Update product
-router.patch('/admin/products/:productId', requireAdmin, async (req, res) => {
+router.patch('/admin/products/:productId', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { productId } = req.params;
 
@@ -449,28 +488,69 @@ router.patch('/admin/products/:productId', requireAdmin, async (req, res) => {
       isActive
     } = req.body;
 
+    // Validate updated fields
+    if (name !== undefined && (typeof name !== 'string' || !name.trim())) {
+      return res.status(400).json({ message: 'Product name must be a non-empty string' });
+    }
+
+    if (description !== undefined && (typeof description !== 'string' || !description.trim())) {
+      return res.status(400).json({ message: 'Description must be a non-empty string' });
+    }
+
+    if (pointsCost !== undefined && (typeof pointsCost !== 'number' || pointsCost < 1)) {
+      return res.status(400).json({ message: 'Points cost must be a positive number' });
+    }
+
+    if (inventory !== undefined && (typeof inventory !== 'number' || inventory < 0)) {
+      return res.status(400).json({ message: 'Inventory must be a non-negative number' });
+    }
+
+    if (category !== undefined) {
+      const validCategories = ['apparel', 'accessories', 'electronics', 'office', 'giftcards', 'experiences', 'food', 'books'];
+      if (!validCategories.includes(category.toLowerCase())) {
+        return res.status(400).json({ 
+          message: 'Invalid category',
+          validCategories
+        });
+      }
+    }
+
+    if (image !== undefined && !/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(image)) {
+      return res.status(400).json({ 
+        message: 'Image must be a valid URL ending with jpg, jpeg, png, gif, or webp' 
+      });
+    }
+
     // Update fields
-    if (name !== undefined) product.name = name;
-    if (description !== undefined) product.description = description;
+    if (name !== undefined) product.name = name.trim();
+    if (description !== undefined) product.description = description.trim();
     if (pointsCost !== undefined) product.pointsCost = pointsCost;
-    if (category !== undefined) product.category = category;
-    if (image !== undefined) product.image = image;
+    if (category !== undefined) product.category = category.toLowerCase();
+    if (image !== undefined) product.image = image.trim();
     if (inventory !== undefined) product.inventory = inventory;
     if (isActive !== undefined) product.isActive = isActive;
 
     await product.save();
 
     return res.json({
+      status: 'success',
       message: 'Product updated successfully',
-      product
+      data: product
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Update product error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation error',
+        errors: Object.values(error.errors).map((err: any) => err.message)
+      });
+    }
     return res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Admin routes - Delete product
-router.delete('/admin/products/:productId', requireAdmin, async (req, res) => {
+router.delete('/admin/products/:productId', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { productId } = req.params;
 
@@ -496,7 +576,7 @@ router.delete('/admin/products/:productId', requireAdmin, async (req, res) => {
 });
 
 // Admin routes - Get all orders
-router.get('/admin/orders', requireAdmin, async (req, res) => {
+router.get('/admin/orders', requireAuth, requireAdmin, async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const page = Math.max(parseInt(req.query.page as string) || 1, 1);

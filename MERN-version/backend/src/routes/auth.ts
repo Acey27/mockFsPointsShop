@@ -298,4 +298,53 @@ router.get('/verify',
   })
 );
 
+/**
+ * @route   POST /api/auth/promote-admin
+ * @desc    Promote a user to admin (one-time setup)
+ * @access  Public with special key
+ */
+router.post('/promote-admin',
+  asyncHandler(async (req, res) => {
+    const { email, adminKey } = req.body;
+
+    // Simple admin key check - in production, this would be more secure
+    if (adminKey !== 'SETUP_ADMIN_2025') {
+      throw new AppError('Invalid admin key', 403);
+    }
+
+    // Check if any admin users already exist
+    const existingAdmin = await User.findOne({ role: 'admin' });
+    if (existingAdmin) {
+      throw new AppError('Admin user already exists. Use the role management endpoint instead.', 400);
+    }
+
+    if (!email) {
+      throw new AppError('Email is required', 400);
+    }
+
+    // Find the user to promote
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Promote to admin
+    user.role = 'admin';
+    await user.save();
+
+    res.json({
+      status: 'success',
+      message: 'User promoted to admin successfully',
+      data: {
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          role: user.role
+        }
+      }
+    });
+  })
+);
+
 export default router;

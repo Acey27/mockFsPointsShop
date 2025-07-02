@@ -10,6 +10,7 @@ import { config } from './config/index.js';
 import { database } from './config/database.js';
 import { globalErrorHandler, notFoundHandler, rateLimitHandler } from './middleware/errorHandler.js';
 import { optionalDatabase } from './middleware/auth.js';
+import { pointsScheduler } from './services/pointsScheduler.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -255,11 +256,19 @@ const startServer = async () => {
       console.log(`📚 API documentation: http://localhost:${PORT}/api-docs`);
       console.log(`🏥 Health check: http://localhost:${PORT}/health`);
       console.log(`🌍 Environment: ${config.NODE_ENV}`);
+      
+      // Start the automatic points scheduler after server is ready
+      console.log('⏰ Starting automatic points scheduler...');
+      pointsScheduler.start();
     });
 
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
       console.log(`\n🔄 Received ${signal}, shutting down gracefully...`);
+      
+      // Stop the points scheduler first
+      console.log('⏹️ Stopping points scheduler...');
+      pointsScheduler.stop();
       
       server.close(async () => {
         console.log('📡 HTTP server closed');
