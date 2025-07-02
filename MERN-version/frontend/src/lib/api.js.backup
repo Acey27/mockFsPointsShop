@@ -1,0 +1,383 @@
+import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
+import { 
+  ApiResponse, 
+  User, 
+  UserPoints, 
+  Product, 
+  Transaction, 
+  Order, 
+  Mood,
+  LoginCredentials,
+  RegisterData,
+  AuthResponse,
+  CheerForm,
+  CheckoutForm,
+  MoodForm,
+  ProductFilters,
+  PaginatedResponse
+} from '../types';
+
+// Environment configuration
+const config = {
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001',
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'Points Shop',
+  APP_VERSION: import.meta.env.VITE_APP_VERSION || '1.0.0',
+  DEV_MODE: import.meta.env.VITE_DEV_MODE === 'true',
+  ENABLE_MOCK_DATA: import.meta.env.VITE_ENABLE_MOCK_DATA === 'true'
+};
+
+// API Client class
+class ApiClient {
+  constructor() {
+    this.client = null;
+    this.authToken = null;
+    this.client = axios.create({
+      baseURL: config.API_BASE_URL,
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Request interceptor to add auth token
+    this.client.interceptors.request.use(
+      (config) => {
+        if (this.authToken) {
+          config.headers.Authorization = `Bearer ${this.authToken}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor for error handling
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        // Handle 401 errors (unauthorized)
+        if (error.response?.status === 401) {
+          this.clearAuth();
+          // Redirect to login or emit event
+          window.dispatchEvent(new CustomEvent('auth:logout'));
+        }
+
+        // Handle network errors
+        if (!error.response) {
+          throw new Error('Network error - please check your connection');
+        }
+
+        // Handle API errors
+        const apiError = error.response.data;
+        throw new Error(apiError.message || 'An error occurred');
+      }
+    );
+
+    // Load auth token from localStorage
+    this.loadAuthToken();
+  }
+
+  // Auth methods
+  loadAuthToken() {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      this.setAuthToken(token);
+    }
+  }
+
+  setAuthToken(token) {
+    this.authToken = token;
+    localStorage.setItem('auth_token', token);
+  }
+
+  clearAuth() {
+    this.authToken = null;
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
+  }
+
+  // Authentication endpoints
+  async register(data) {
+    const response = await this.client.post>('/api/auth/register', data);
+    const authData = response.data.data;
+    this.setAuthToken(authData.token);
+    return authData;
+  }
+
+  async login(credentials) {
+    const response = await this.client.post>('/api/auth/login', credentials);
+    const authData = response.data.data;
+    this.setAuthToken(authData.token);
+    localStorage.setItem('refresh_token', authData.refreshToken);
+    localStorage.setItem('user_data', JSON.stringify(authData.user));
+    return authData;
+  }
+
+  async logout() {
+    try {
+      await this.client.post('/api/auth/logout');
+    } finally {
+      this.clearAuth();
+    }
+  }
+
+  async getCurrentUser() {
+    const response = await this.client.get>('/api/auth/me');
+    return response.data.data;
+  }
+
+  async refreshToken() {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await this.client.post>(
+      '/api/auth/refresh',
+      { refreshToken }
+    );
+    
+    const tokens = response.data.data;
+    this.setAuthToken(tokens.token);
+    localStorage.setItem('refresh_token', tokens.refreshToken);
+    return tokens;
+  }
+
+  // User endpoints
+  async getUsers(params) {
+    const response = await this.client.get('/api/users', { params });
+    return response.data;
+  }
+
+  async getUserById(id) {
+    const response = await this.client.get>(`/api/users/${id}`);
+    return response.data.data;
+  }
+
+  async getUsersForCheering() {
+    const response = await this.client.get>('/api/users/for-cheering');
+    return response.data.data;
+  }
+
+  // Points endpoints
+  async getPointsBalance() {
+    const response = await this.client.get>('/api/points/balance');
+    return response.data.data;
+  }
+
+  async getTransactions(params { page number; limit number; type? })> {
+    const response = await this.client.get>('/api/points/transactions', { params });
+    return response.data;
+  }
+
+  async getAdminTransactions(params { page number; limit number; type?; days number })> {
+    const response = await this.client.get>('/api/admin/transactions', { params });
+    return response.data;
+  }
+
+  async cheerUser(data: CheerForm) {
+    const response = await this.client.post>('/api/points/cheer', data);
+    return response.data.data;
+  }
+
+  async getLeaderboard(params { limit number; department? })> {
+    const response = await this.client.get>>('/api/points/leaderboard', { params });
+    return response.data.data;
+  }
+
+  // Shop endpoints
+  async getProducts(filters ProductFilters)> {
+    const response = await this.client.get>('/api/shop/products', { params: filters });
+    return response.data;
+  }
+
+  async getProductById(id) {
+    const response = await this.client.get>(`/api/shop/products/${id}`);
+    return response.data.data;
+  }
+
+  async addToCart(productId, quantity: number) {
+    await this.client.post('/api/shop/cart/add', { productId, quantity });
+  }
+
+  async getCart()> {
+    const response = await this.client.get>>('/api/shop/cart');
+    return response.data.data;
+  }
+
+  async checkout(data: CheckoutForm) {
+    const response = await this.client.post>('/api/shop/checkout', data);
+    return response.data.data;
+  }
+
+  async getOrders(params { page number; limit number; status? })> {
+    const response = await this.client.get>('/api/shop/orders', { params });
+    return response.data;
+  }
+
+  // New order history with receipts
+  async getOrderHistory(params { page number; limit number; status? })> {
+    const response = await this.client.get>('/api/shop/orders/history', { params });
+    return response.data;
+  }
+
+  // Get specific order with receipt
+  async getOrderWithReceipt(orderId) {
+    const response = await this.client.get>(`/api/shop/orders/${orderId}`);
+    return response.data.data;
+  }
+
+  // Mood endpoints
+  async submitMood(data: MoodForm) {
+    const response = await this.client.post>('/api/mood', data);
+    return response.data.data;
+  }
+
+  async getMoodHistory(params { limit number; startDate?; endDate? }) {
+    const response = await this.client.get>('/api/mood/history', { params });
+    return response.data.data;
+  }
+
+  async getMoodAnalytics(days number) {
+    const response = await this.client.get>('/api/mood/analytics', { params });
+    return response.data.data;
+  }
+
+  // Health check endpoints
+  async healthCheck() {
+    const response = await this.client.get>('/api/health');
+    return response.data.data;
+  }
+
+  // Demo endpoints (fallback when database is not available)
+  async getDemoUsers() {
+    const response = await this.client.get>('/api/demo/users');
+    return response.data.data;
+  }
+
+  async getDemoProducts() {
+    const response = await this.client.get>('/api/demo/products');
+    return response.data.data;
+  }
+
+  // Admin endpoints
+  async getAdminDashboard() {
+    const response = await this.client.get>('/api/admin/dashboard');
+    return response.data.data;
+  }
+
+  async getAdminUsersOverview(params { 
+    page number; 
+    limit number; 
+    search?; 
+    sortBy?; 
+    sortOrder 'asc' | 'desc' 
+  }) {
+    const response = await this.client.get>('/api/admin/users/overview', { params });
+    return response.data.data;
+  }
+
+  async getAdminPointsAnalytics(days number) {
+    const response = await this.client.get>('/api/admin/analytics/points', { params });
+    return response.data.data;
+  }
+
+  async getAdminMoodAnalytics(days number) {
+    const response = await this.client.get>('/api/admin/analytics/mood', { params });
+    return response.data.data;
+  }
+
+  async getSystemHealth() {
+    const response = await this.client.get>('/api/admin/system/health');
+    return response.data.data;
+  }
+
+  // Admin product management
+  async createProduct(data: Partial) {
+    const response = await this.client.post>('/api/shop/admin/products', data);
+    return response.data.data;
+  }
+
+  async updateProduct(id, data: Partial) {
+    const response = await this.client.patch>(`/api/shop/admin/products/${id}`, data);
+    return response.data.data;
+  }
+
+  async deleteProduct(id) {
+    await this.client.delete(`/api/shop/admin/products/${id}`);
+  }
+
+  async getAdminProducts(params ProductFilters)> {
+    const response = await this.client.get>('/api/shop/admin/products', { params });
+    return response.data;
+  }
+
+  async getAdminOrders(params { page number; limit number; status? })> {
+    const response = await this.client.get>('/api/admin/orders', { params });
+    return response.data;
+  }
+
+  async updateOrderStatus(orderId, status) {
+    const response = await this.client.patch>(`/api/admin/orders/${orderId}`, { status });
+    return response.data.data;
+  }
+
+  // Admin points management
+  async addPointsToUser(userId, amount: number, reason) {
+    const response = await this.client.post>('/api/points/admin/add', { 
+      userId, 
+      amount, 
+      reason 
+    });
+    return response.data.data;
+  }
+
+  async deductPointsFromUser(userId, amount: number, reason) {
+    const response = await this.client.post>('/api/points/admin/deduct', { 
+      userId, 
+      amount, 
+      reason 
+    });
+    return response.data.data;
+  }
+
+  async getUserPointsAdmin(userId) {
+    const response = await this.client.get>(`/api/points/admin/${userId}`);
+    return response.data.data;
+  }
+
+  async resetMonthlyLimits() {
+    const response = await this.client.post>('/api/points/admin/reset-monthly');
+    return response.data.data;
+  }
+
+  // Points Scheduler Management
+  async getSchedulerStatus() {
+    const response = await this.client.get>('/api/admin/scheduler/status');
+    return response.data.data;
+  }
+
+  async startScheduler() {
+    const response = await this.client.post>('/api/admin/scheduler/start');
+    return response.data.data;
+  }
+
+  async stopScheduler() {
+    const response = await this.client.post>('/api/admin/scheduler/stop');
+    return response.data.data;
+  }
+
+  async triggerManualDistribution() {
+    const response = await this.client.post>('/api/admin/scheduler/distribute');
+    return response.data.data;
+  }
+}
+
+// Create and export a singleton instance
+export const apiClient = new ApiClient();
+export default apiClient;
+
+// Export configuration for components that need it
+export { config };
