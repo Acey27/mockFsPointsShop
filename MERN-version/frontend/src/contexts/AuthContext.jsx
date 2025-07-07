@@ -89,12 +89,13 @@ export const AuthProvider= ({ children }) => {
       const userData = await apiClient.getCurrentUser();
       console.log('Refreshed user data:', userData); // Debug log
       setUser(userData.user);
-      setPoints(userData.points);
+      // Points are managed by React Query, so we'll refetch them
+      refetchPoints();
     } catch (error) {
       console.error('Failed to refresh user data:', error);
       toast.error('Failed to refresh user data');
     }
-  }, [user]);
+  }, [user, refetchPoints]);
 
   // Listen for user data update events
   useEffect(() => {

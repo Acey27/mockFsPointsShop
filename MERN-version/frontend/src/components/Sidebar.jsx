@@ -9,7 +9,6 @@ import {
   UserIcon,
   CogIcon,
   DocumentTextIcon,
-  ClipboardDocumentListIcon,
   HeartIcon
 } from '@heroicons/react/24/outline';
 
@@ -31,7 +30,6 @@ const navigation = [
   { name: 'Mood', href: '/mood', icon: FaceSmileIcon },
   { name: 'Profile', href: '/profile', icon: UserIcon },
   { name: 'Admin', href: '/admin', icon: CogIcon, adminOnly: true },
-  { name: 'Purchase Logs', href: '/admin/purchase-logs', icon: ClipboardDocumentListIcon, adminOnly: true },
 ];
 
 const Sidebar= () => {

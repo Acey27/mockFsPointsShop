@@ -337,8 +337,11 @@ class ApiClient {
     return response.data;
   }
 
-  async updateOrderStatus(orderId, status) {
-    const response = await this.client.patch(`/api/admin/orders/${orderId}`, { status });
+  async updateOrderStatus(orderId, status, adminNotes) {
+    const response = await this.client.patch(`/api/admin/orders/${orderId}`, { 
+      status, 
+      adminNotes 
+    });
     return response.data.data;
   }
 
@@ -346,6 +349,14 @@ class ApiClient {
   async getCancellationRequests(params) {
     const response = await this.client.get('/api/admin/orders/cancellation-requests', { params });
     return response.data;
+  }
+
+  async processCancellationRequest(orderId, action, adminNotes) {
+    const response = await this.client.patch(`/api/admin/orders/${orderId}/cancellation-request`, {
+      action,
+      adminNotes
+    });
+    return response.data.data;
   }
 
   async processCancellationRequest(orderId, action, adminNotes = '') {
@@ -434,28 +445,6 @@ class ApiClient {
    */
   async getRecentCheers(params = {}) {
     const response = await this.client.get('/api/cheer/recent', { params });
-    return response.data;
-  }
-
-  /**
-   * Create a new cheer
-   * @param {Object} cheerData - Cheer data
-   * @returns {Promise<Object>} Created cheer
-   */
-  async createCheer(cheerData) {
-    const response = await this.client.post('/api/points/cheer', cheerData);
-    return response.data;
-  }
-
-  /**
-   * Get leaderboards
-   * @param {string} period - Period (weekly, monthly, alltime)
-   * @returns {Promise<Object>} Leaderboard data
-   */
-  async getLeaderboards(period = 'weekly') {
-    const response = await this.client.get('/api/cheer/leaderboards', { 
-      params: { period } 
-    });
     return response.data;
   }
 

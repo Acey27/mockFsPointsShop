@@ -19,7 +19,7 @@ const transactionSchema = new Schema({
   },
   type: {
     type: String,
-    enum: ['earned', 'spent', 'given', 'received', 'admin_grant', 'admin_deduct'],
+    enum: ['earned', 'spent', 'given', 'received', 'admin_grant', 'admin_deduct', 'refund'],
     required: [true, 'Transaction type is required'],
   },
   amount: {

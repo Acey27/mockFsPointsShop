@@ -15,7 +15,6 @@ import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import PurchaseSuccessPage from './pages/PurchaseSuccessPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
-import AdminPurchaseLogsPage from './pages/AdminPurchaseLogsPage';
 import CheerPage from './pages/CheerPage';
 
 // Layout components
@@ -106,14 +105,6 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute adminOnly>
               <AdminPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="admin/purchase-logs" 
-          element={
-            <ProtectedRoute adminOnly>
-              <AdminPurchaseLogsPage />
             </ProtectedRoute>
           } 
         />

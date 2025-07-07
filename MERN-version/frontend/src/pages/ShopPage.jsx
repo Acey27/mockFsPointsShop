@@ -119,6 +119,7 @@ const ShopPage= () => {
       // Navigate to success page
       navigate('/purchase-success', { 
         state: { 
+          order: data.order,
           receipt: data.receipt,
           newBalance: data.newBalance 
         } 
@@ -359,10 +360,10 @@ const ShopPage= () => {
               </div>
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={selectedItems.size === cart.length ? deselectAllItems : selectAllItems}
+                  onClick={selectedItems.size === cart?.data?.items?.length ? deselectAllItems : selectAllItems}
                   className="text-green-600 hover:text-green-800 font-medium text-sm"
                 >
-                  {selectedItems.size === cart.length ? 'Deselect All' : 'Select All'}
+                  {selectedItems.size === cart?.data?.items?.length ? 'Deselect All' : 'Select All'}
                 </button>
                 <button
                   onClick={clearCart}
@@ -376,99 +377,124 @@ const ShopPage= () => {
 
           {/* Cart Items - Always show when cart has items */}
           <div className="px-6 py-4">
-            <div className="space-y-3 mb-4">
-              {cart?.data?.items?.map((item) => (
-                <div key={item.productId?._id} className={`flex items-center justify-between p-4 rounded-lg border transition-all ${
-                  selectedItems.has(item.productId?._id) 
-                    ? 'bg-blue-50 border-blue-300 shadow-sm' 
-                    : 'bg-white border-gray-200'
-                }`}>
-                  <div className="flex items-center space-x-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.has(item.productId?._id)}
-                      onChange={() => toggleItemSelection(item.productId?._id)}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <img
-                      src={item.productId?.image || 'https://via.placeholder.com/48x48?text=Product'}
-                      alt={item.productId?.name || 'Product'}
-                      className="w-12 h-12 object-cover rounded-md"
-                    />
-                    <div>
-                      <h4 className="font-medium text-gray-900">{item.productId?.name || 'Loading...'}</h4>
-                      <p className="text-sm text-gray-600">{item.productId?.pointsCost || 0} points each</p>
+            {cartLoading ? (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner size="sm" text="Loading cart..." />
+              </div>
+            ) : cartError ? (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-red-800 text-sm">
+                  Error loading cart: {cartError.message || 'Unknown error'}
+                </p>
+              </div>
+            ) : cart?.data?.items?.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <ShoppingCartIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                <p>Your cart is empty</p>
+              </div>
+            ) : (
+              <div className="space-y-3 mb-4">
+                {cart?.data?.items?.map((item) => (
+                  <div key={item.productId?._id} className={`flex items-center justify-between p-4 rounded-lg border transition-all ${
+                    selectedItems.has(item.productId?._id) 
+                      ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                      : 'bg-white border-gray-200'
+                  }`}>
+                    <div className="flex items-center space-x-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(item.productId?._id)}
+                        onChange={() => toggleItemSelection(item.productId?._id)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <img
+                        src={item.productId?.image || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzNEMyOSA0IDI5IDQgMjkgNEMyOSA0IDI5IDQgMjMgNEMxNyA0IDE3IDQgMTcgNEMxNyA0IDE3IDQgMjMgMzRaIiBmaWxsPSIjOUNBM0FGIi8+CjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjgiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K'}
+                        alt={item.productId?.name || 'Product'}
+                        className="w-12 h-12 object-cover rounded-md"
+                        onError={(e) => {
+                          e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzNEMyOSA0IDI5IDQgMjkgNEMyOSA0IDI5IDQgMjMgNEMxNyA0IDE3IDQgMTcgNEMxNyA0IDE3IDQgMjMgMzRaIiBmaWxsPSIjOUNBM0FGIi8+CjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjgiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K';
+                        }}
+                      />
+                      <div>
+                        <h4 className="font-medium text-gray-900">{item.productId?.name || 'Loading...'}</h4>
+                        <p className="text-sm text-gray-600">{item.productId?.pointsCost || 0} points each</p>
+                        {item.productId?.description && (
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.productId.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => updateCartQuantity(item.productId?._id, item.quantity - 1)}
+                          className="p-1 rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          <MinusIcon className="w-4 h-4 text-gray-600" />
+                        </button>
+                        <span className="w-8 text-center font-medium text-gray-900">{item.quantity}</span>
+                        <button
+                          onClick={() => updateCartQuantity(item.productId?._id, item.quantity + 1)}
+                          className="p-1 rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          <PlusIcon className="w-4 h-4 text-gray-600" />
+                        </button>
+                      </div>
+                      <div className="text-right min-w-[80px]">
+                        <p className="font-semibold text-gray-900">{(item.productId?.pointsCost || 0) * item.quantity} pts</p>
+                      </div>
+                      <button
+                        onClick={() => removeFromCart(item.productId?._id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Cart Summary and Actions */}
+            {cart?.data?.items?.length > 0 && (
+              <div className="border-t border-blue-200 pt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col space-y-1">
+                    <div className="text-lg font-semibold text-blue-900">
+                      Selected: {getSelectedTotal()} points ({getSelectedItemCount()} items)
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Available: {points?.availablePoints || 0} points | Cart Total: {getCartTotal()} points
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
-                      <button
-                        onClick={() => updateCartQuantity(item.productId?._id, item.quantity - 1)}
-                        className="p-1 rounded-md hover:bg-gray-200 transition-colors"
-                      >
-                        <MinusIcon className="w-4 h-4 text-gray-600" />
-                      </button>
-                      <span className="w-8 text-center font-medium text-gray-900">{item.quantity}</span>
-                      <button
-                        onClick={() => updateCartQuantity(item.productId?._id, item.quantity + 1)}
-                        className="p-1 rounded-md hover:bg-gray-200 transition-colors"
-                      >
-                        <PlusIcon className="w-4 h-4 text-gray-600" />
-                      </button>
-                    </div>
-                    <div className="text-right min-w-[80px]">
-                      <p className="font-semibold text-gray-900">{(item.productId?.pointsCost || 0) * item.quantity} pts</p>
-                    </div>
+                    {getSelectedTotal() > (points?.availablePoints || 0) && (
+                      <div className="bg-red-50 text-red-700 px-3 py-1 rounded-md text-sm">
+                        Insufficient points! Need {getSelectedTotal() - (points?.availablePoints || 0)} more.
+                      </div>
+                    )}
+                    {selectedItems.size === 0 && (
+                      <div className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-md text-sm">
+                        Select items to purchase
+                      </div>
+                    )}
                     <button
-                      onClick={() => removeFromCart(item.productId?._id)}
-                      className="text-red-500 hover:text-red-700 p-1"
+                      onClick={handlePurchase}
+                      disabled={purchaseMutation.isPending || getSelectedTotal() > (points?.availablePoints || 0) || selectedItems.size === 0}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
                     >
-                      <XMarkIcon className="w-4 h-4" />
+                      {purchaseMutation.isPending ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <>
+                          <CheckCircleIcon className="w-4 h-4" />
+                          <span>Purchase Selected ({getSelectedTotal()} pts)</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Cart Summary and Actions */}
-            <div className="border-t border-blue-200 pt-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex flex-col space-y-1">
-                  <div className="text-lg font-semibold text-blue-900">
-                    Selected: {getSelectedTotal()} points ({getSelectedItemCount()} items)
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Available: {points?.availablePoints || 0} points | Cart Total: {getCartTotal()} points
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  {getSelectedTotal() > (points?.availablePoints || 0) && (
-                    <div className="bg-red-50 text-red-700 px-3 py-1 rounded-md text-sm">
-                      Insufficient points! Need {getSelectedTotal() - (points?.availablePoints || 0)} more.
-                    </div>
-                  )}
-                  {selectedItems.size === 0 && (
-                    <div className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-md text-sm">
-                      Select items to purchase
-                    </div>
-                  )}
-                  <button
-                    onClick={handlePurchase}
-                    disabled={purchaseMutation.isPending || getSelectedTotal() > (points?.availablePoints || 0) || selectedItems.size === 0}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
-                  >
-                    {purchaseMutation.isPending ? (
-                      <LoadingSpinner size="sm" />
-                    ) : (
-                      <>
-                        <CheckCircleIcon className="w-4 h-4" />
-                        <span>Purchase Selected ({getSelectedTotal()} pts)</span>
-                      </>
-                    )}
-                  </button>
-                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

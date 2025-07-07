@@ -77,9 +77,9 @@ const limiter = rateLimit({
     if (req.path === '/health' || req.path === '/api/health') {
       return true;
     }
-    // More lenient rate limiting in development
+    // Skip rate limiting entirely in development
     if (config.NODE_ENV === 'development') {
-      return false; // Still apply rate limiting but with higher limits
+      return true;
     }
     return false;
   }
@@ -88,11 +88,18 @@ const limiter = rateLimit({
 // More lenient rate limiting for auth endpoints in development
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: config.NODE_ENV === 'development' ? 50 : 10, // 50 in dev, 10 in production
+  max: config.NODE_ENV === 'development' ? 5000 : 10, // 5000 in dev, 10 in production
   message: rateLimitHandler,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful requests
+  skip: (req) => {
+    // Skip rate limiting for development environment entirely
+    if (config.NODE_ENV === 'development') {
+      return true;
+    }
+    return false;
+  }
 });
 
 app.use('/api/', limiter);

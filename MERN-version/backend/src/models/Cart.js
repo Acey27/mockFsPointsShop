@@ -97,10 +97,14 @@ cartSchema.methods.clearCart = function() {
 };
 
 cartSchema.methods.getTotal = async function() {
-  await this.populate('items.productId', 'pointsCost');
+  // Only populate if not already populated
+  if (!this.populated('items.productId')) {
+    await this.populate('items.productId', 'pointsCost');
+  }
   
   return this.items.reduce((total, item) => {
-    return total + (item.productId.pointsCost * item.quantity);
+    const pointsCost = item.productId?.pointsCost || 0;
+    return total + (pointsCost * item.quantity);
   }, 0);
 };
 

@@ -1194,6 +1194,118 @@ router.get('/orders/cancellation-requests', async (req, res) => {
   }
 });
 
+// Update order status (confirm/cancel by admin)
+router.patch('/orders/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, adminNotes = '' } = req.body;
+    const adminId = req.user._id;
+
+    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid order ID'
+      });
+    }
+
+    if (!['pending', 'completed', 'cancelled'].includes(status)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid status. Must be "pending", "completed", or "cancelled"'
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Order not found'
+      });
+    }
+
+    const oldStatus = order.status;
+    order.status = status;
+    
+    if (adminNotes) {
+      order.notes = adminNotes;
+    }
+
+    // If changing to completed or cancelled, set processed timestamp
+    if (status === 'completed' || status === 'cancelled') {
+      order.processedAt = new Date();
+    }
+
+    // If cancelling an order, refund points
+    if (status === 'cancelled' && oldStatus !== 'cancelled') {
+      console.log(`Processing refund for cancelled order ${order.orderNumber}, amount: ${order.totalPoints} points`);
+
+      // Refund points to user
+      const userPoints = await UserPoints.findOne({ userId: order.userId });
+      if (userPoints) {
+        const oldBalance = userPoints.availablePoints;
+        const oldTotalSpent = userPoints.totalSpent;
+        
+        userPoints.availablePoints += order.totalPoints;
+        // Only subtract from totalSpent if it won't go negative
+        userPoints.totalSpent = Math.max(0, userPoints.totalSpent - order.totalPoints);
+        
+        console.log(`Refunding points:
+          - User ID: ${order.userId}
+          - Old balance: ${oldBalance}
+          - New balance: ${userPoints.availablePoints}
+          - Old total spent: ${oldTotalSpent}
+          - New total spent: ${userPoints.totalSpent}
+          - Refund amount: ${order.totalPoints}`);
+        
+        await userPoints.save();
+
+        // Create refund transaction
+        const refundTransaction = new Transaction({
+          userId: order.userId,
+          type: 'refund',
+          amount: order.totalPoints,
+          description: `Refund for cancelled order ${order.orderNumber || order._id}`,
+          metadata: {
+            orderId: order._id,
+            refundReason: 'Admin cancelled order'
+          }
+        });
+        await refundTransaction.save();
+        console.log(`Refund transaction created: ${refundTransaction._id}`);
+      } else {
+        console.error(`No UserPoints found for user ${order.userId}`);
+      }
+
+      // Restore product inventory
+      for (const item of order.items) {
+        const product = await Product.findById(item.productId);
+        if (product && product.inventory !== null) {
+          product.inventory += item.quantity;
+          await product.save();
+        }
+      }
+    }
+
+    await order.save();
+
+    const updatedOrder = await Order.findById(orderId)
+      .populate('userId', 'name email department')
+      .populate('items.productId', 'name description image category pointsCost');
+
+    return res.json({
+      status: 'success',
+      message: `Order ${status} successfully`,
+      data: updatedOrder
+    });
+  } catch (error) {
+    console.error('Update order status error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to update order status'
+    });
+  }
+});
+
 // Process cancellation request (approve/deny)
 router.patch('/orders/:orderId/cancellation-request', async (req, res) => {
   try {
@@ -1248,11 +1360,26 @@ router.patch('/orders/:orderId/cancellation-request', async (req, res) => {
       order.status = 'cancelled';
       order.processedAt = new Date();
 
+      console.log(`Processing refund for order ${order.orderNumber}, amount: ${order.totalPoints} points`);
+
       // Refund points to user
       const userPoints = await UserPoints.findOne({ userId: order.userId });
       if (userPoints) {
-        userPoints.currentBalance += order.totalPoints;
-        userPoints.totalSpent -= order.totalPoints;
+        const oldBalance = userPoints.availablePoints;
+        const oldTotalSpent = userPoints.totalSpent;
+        
+        userPoints.availablePoints += order.totalPoints;
+        // Only subtract from totalSpent if it won't go negative
+        userPoints.totalSpent = Math.max(0, userPoints.totalSpent - order.totalPoints);
+        
+        console.log(`Refunding points:
+          - User ID: ${order.userId}
+          - Old balance: ${oldBalance}
+          - New balance: ${userPoints.availablePoints}
+          - Old total spent: ${oldTotalSpent}
+          - New total spent: ${userPoints.totalSpent}
+          - Refund amount: ${order.totalPoints}`);
+        
         await userPoints.save();
 
         // Create refund transaction
@@ -1267,6 +1394,9 @@ router.patch('/orders/:orderId/cancellation-request', async (req, res) => {
           }
         });
         await refundTransaction.save();
+        console.log(`Refund transaction created: ${refundTransaction._id}`);
+      } else {
+        console.error(`No UserPoints found for user ${order.userId}`);
       }
 
       // Restore product inventory

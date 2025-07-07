@@ -101,43 +101,6 @@ router.get('/cart', requireAuth, async (req, res) => {
     if (!cart) {
       cart = { items: [], totalPoints: 0 };
     } else {
-      // Check if any items have incomplete product data and fetch manually
-      const itemsNeedingProductData = [];
-      
-      for (let i = 0; i < cart.items.length; i++) {
-        const item = cart.items[i];
-        if (!item.productId.name || !item.productId.image) {
-          itemsNeedingProductData.push(i);
-        }
-      }
-      
-      // Fetch missing product data
-      if (itemsNeedingProductData.length > 0) {
-        const Product = (await import('../models/Product.js')).default;
-        
-        for (const index of itemsNeedingProductData) {
-          const item = cart.items[index];
-          try {
-            const product = await Product.findById(item.productId._id);
-            if (product) {
-              // Merge the complete product data
-              cart.items[index].productId = {
-                _id: product._id,
-                name: product.name,
-                description: product.description,
-                image: product.image,
-                pointsCost: product.pointsCost,
-                category: product.category,
-                inventory: product.inventory,
-                isActive: product.isActive
-              };
-            }
-          } catch (error) {
-            console.error('Error fetching product data:', error);
-          }
-        }
-      }
-      
       // Calculate total points
       cart.totalPoints = await cart.getTotal();
     }
@@ -1141,9 +1104,8 @@ router.post('/checkout', requireAuth, async (req, res) => {
         orderNumber,
         items: orderItems,
         totalPoints: grandTotal,
-        status: 'completed',
+        status: 'pending',  // Changed from 'completed' to 'pending'
         shippingAddress,
-        processedAt: new Date(),
         metadata: {
           paymentMethod: 'points',
           receiptGenerated: true
@@ -1224,7 +1186,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
           newBalance: userPoints.availablePoints
         },
         shippingAddress,
-        status: 'completed'
+        status: 'pending'  // Changed from 'completed' to 'pending'
       };
 
       return res.status(201).json({
@@ -1469,10 +1431,10 @@ router.patch('/orders/:orderId/request-cancellation', requireAuth, async (req, r
     }
 
     // Check if order is in a state that allows cancellation requests
-    if (order.status !== 'completed') {
+    if (!['completed', 'pending'].includes(order.status)) {
       return res.status(400).json({
         status: 'error',
-        message: 'Only completed orders can request cancellation'
+        message: 'Only pending or completed orders can request cancellation'
       });
     }
 
