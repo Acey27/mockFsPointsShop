@@ -17,6 +17,7 @@ class PointsSchedulerService {
   start() {
     console.log('⚠️ Automatic points distribution is disabled');
     console.log('💡 Points can only be earned through peer recognition (cheers) or admin actions');
+    console.log('⚠️ Points scheduler is disabled');
     return;
     
     // Original code commented out to disable the scheduler
@@ -49,6 +50,7 @@ class PointsSchedulerService {
     const scheduleInfo = this.getScheduleDescription(schedule);
     console.log(`✅ Points scheduler started - distributing ${pointsPerCycle} points ${scheduleInfo}`);
     console.log(`✅ Monthly cheer reset scheduler started - resets on 1st of each month at 00:00 UTC`);
+    */
   }
 
   /**
