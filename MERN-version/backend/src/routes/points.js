@@ -43,12 +43,25 @@ router.get('/history', requireAuth, async (req, res) => {
     const type = req.query.type; // 'earned' | 'spent'
 
     // Build query to find transactions where user is either sender, receiver, or legacy userId
-    const baseQuery= {
+    // FILTER OUT DUPLICATE CHEER TRANSACTIONS: Only show 'given' for sender, only show 'received' for receiver
+    const baseQuery = {
       $or: [
-        { fromUserId: req.user._id },
-        { toUserId: req.user._id },
+        // For transactions sent by this user (cheers given, purchases made)
+        { 
+          fromUserId: req.user._id,
+          type: { $nin: ['received'] } // Don't show received transactions when user is the sender
+        },
+        // For transactions received by this user (cheers received)
+        { 
+          toUserId: req.user._id,
+          type: { $nin: ['given'] } // Don't show given transactions when user is the receiver
+        },
         // Support legacy transactions with userId field
-        { userId: req.user._id }
+        { 
+          userId: req.user._id,
+          fromUserId: { $exists: false },
+          toUserId: { $exists: false }
+        }
       ]
     };
     
@@ -65,6 +78,18 @@ router.get('/history', requireAuth, async (req, res) => {
         type: { $in: ['spent', 'given', 'purchase', 'admin_deduct'] }
       };
     }
+
+    // Always exclude automatic distribution transactions
+    query = {
+      ...query,
+      description: { 
+        $not: { 
+          $regex: 'Automatic point distribution|daily', 
+          $options: 'i' 
+        } 
+      },
+      'metadata.type': { $ne: 'automatic_distribution' }
+    };
 
     const transactions = await Transaction.find(query)
       .sort({ createdAt: -1 })
@@ -100,12 +125,25 @@ router.get('/transactions', requireAuth, async (req, res) => {
     const type = req.query.type; // 'earned' | 'spent'
 
     // Build query to find transactions where user is either sender, receiver, or legacy userId
-    const baseQuery= {
+    // FILTER OUT DUPLICATE CHEER TRANSACTIONS: Only show 'given' for sender, only show 'received' for receiver
+    const baseQuery = {
       $or: [
-        { fromUserId: req.user._id },
-        { toUserId: req.user._id },
+        // For transactions sent by this user (cheers given, purchases made)
+        { 
+          fromUserId: req.user._id,
+          type: { $nin: ['received'] } // Don't show received transactions when user is the sender
+        },
+        // For transactions received by this user (cheers received)
+        { 
+          toUserId: req.user._id,
+          type: { $nin: ['given'] } // Don't show given transactions when user is the receiver
+        },
         // Support legacy transactions with userId field
-        { userId: req.user._id }
+        { 
+          userId: req.user._id,
+          fromUserId: { $exists: false },
+          toUserId: { $exists: false }
+        }
       ]
     };
     
@@ -122,6 +160,18 @@ router.get('/transactions', requireAuth, async (req, res) => {
         type: { $in: ['spent', 'given', 'purchase', 'admin_deduct'] }
       };
     }
+
+    // Always exclude automatic distribution transactions
+    query = {
+      ...query,
+      description: { 
+        $not: { 
+          $regex: 'Automatic point distribution|daily', 
+          $options: 'i' 
+        } 
+      },
+      'metadata.type': { $ne: 'automatic_distribution' }
+    };
 
     const transactions = await Transaction.find(query)
       .sort({ createdAt: -1 })

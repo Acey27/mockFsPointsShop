@@ -630,8 +630,10 @@ router.get('/orders', async (req, res) => {
     const status = req.query.status;
     const startDate = req.query.startDate;
     const endDate = req.query.endDate;
+    const days = parseInt(req.query.days);
     const minAmount = parseInt(req.query.minAmount) || 0;
     const maxAmount = parseInt(req.query.maxAmount) || 999999;
+    const search = req.query.search; // Add search parameter
 
     // Build query
     const query= {
@@ -650,27 +652,154 @@ router.get('/orders', async (req, res) => {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
       if (endDate) query.createdAt.$lte = new Date(endDate);
+    } else if (days) {
+      // Handle days parameter for date filtering
+      const now = new Date();
+      const daysAgo = subDays(now, days);
+      query.createdAt = { $gte: daysAgo };
     }
 
-    const orders = await Order.find(query)
-      .populate('items.productId', 'name description category pointsCost')
-      .populate('userId', 'name email department avatar')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // Add search functionality - Build separate base query for aggregation
+    const baseQuery = {
+      totalPoints: { $gte: minAmount, $lte: maxAmount }
+    };
 
-    const total = await Order.countDocuments(query);
+    if (userId) {
+      baseQuery.userId = new mongoose.Types.ObjectId(userId);
+    }
+
+    if (status) {
+      baseQuery.status = status;
+    }
+
+    if (startDate || endDate) {
+      baseQuery.createdAt = {};
+      if (startDate) baseQuery.createdAt.$gte = new Date(startDate);
+      if (endDate) baseQuery.createdAt.$lte = new Date(endDate);
+    } else if (days) {
+      // Handle days parameter for date filtering
+      const now = new Date();
+      const daysAgo = subDays(now, days);
+      baseQuery.createdAt = { $gte: daysAgo };
+    }
+
+    let orders;
+    if (search) {
+      // If searching, we need to use aggregation to search in populated fields
+      const searchMatchConditions = {
+        ...baseQuery,
+        $or: [
+          { orderNumber: { $regex: search, $options: 'i' } },
+          { 'userData.name': { $regex: search, $options: 'i' } },
+          { 'userData.email': { $regex: search, $options: 'i' } },
+          { 'productData.name': { $regex: search, $options: 'i' } }
+        ]
+      };
+
+      orders = await Order.aggregate([
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userData'
+          }
+        },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'items.productId',
+            foreignField: '_id',
+            as: 'productData'
+          }
+        },
+        {
+          $match: searchMatchConditions
+        },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit }
+      ]);
+
+      // Convert aggregation results back to proper structure
+      orders = orders.map(order => {
+        const orderObj = {
+          ...order,
+          _id: order._id,
+          userId: order.userData && order.userData[0] ? order.userData[0] : order.userId
+        };
+        
+        // Fix items structure
+        if (order.items && order.productData) {
+          orderObj.items = order.items.map(item => {
+            const productData = order.productData.find(p => p._id.toString() === item.productId.toString());
+            return {
+              ...item,
+              productId: productData || item.productId
+            };
+          });
+        }
+        
+        return orderObj;
+      });
+    } else {
+      orders = await Order.find(baseQuery)
+        .populate('items.productId', 'name description category pointsCost')
+        .populate('userId', 'name email department avatar')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+    }
+
+    // Get accurate count for search results
+    let total;
+    if (search) {
+      const countResult = await Order.aggregate([
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userData'
+          }
+        },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'items.productId',
+            foreignField: '_id',
+            as: 'productData'
+          }
+        },
+        {
+          $match: {
+            ...baseQuery,
+            $or: [
+              { orderNumber: { $regex: search, $options: 'i' } },
+              { 'userData.name': { $regex: search, $options: 'i' } },
+              { 'userData.email': { $regex: search, $options: 'i' } },
+              { 'productData.name': { $regex: search, $options: 'i' } }
+            ]
+          }
+        },
+        { $count: "total" }
+      ]);
+      total = countResult[0]?.total || 0;
+    } else {
+      total = await Order.countDocuments(baseQuery);
+    }
 
     // Generate detailed receipts for admin view
     const ordersWithReceipts = orders.map(order => {
-      const orderObj = order.toObject();
+      // Handle both Mongoose documents and aggregation results
+      const orderObj = order.toObject ? order.toObject() : order;
       const userObj = orderObj.userId;
       
       const receipt = {
         receiptId: `RCP-${order._id}`,
         orderNumber: orderObj.orderNumber || `ORD-${order._id}`,
         orderId: order._id,
-        timestamp: order.createdAt.toISOString(),
+        timestamp: order.createdAt ? new Date(order.createdAt).toISOString() : new Date().toISOString(),
         customer: {
           name: userObj?.name || 'Unknown',
           email: userObj?.email || 'Unknown',
@@ -706,7 +835,7 @@ router.get('/orders', async (req, res) => {
 
     // Calculate order analytics
     const orderAnalytics = await Order.aggregate([
-      { $match: query },
+      { $match: baseQuery },
       {
         $group: {
           _id: '$status',
@@ -735,9 +864,11 @@ router.get('/orders', async (req, res) => {
 
   } catch (error) {
     console.error('Admin orders error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to fetch orders'
+      message: 'Failed to fetch orders',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -1017,6 +1148,155 @@ router.post('/scheduler/distribute', async (req, res) => {
       status: 'error',
       message: 'Failed to distribute points',
       error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get orders with pending cancellation requests
+router.get('/orders/cancellation-requests', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const skip = (page - 1) * limit;
+
+    const orders = await Order.find({
+      'cancellationRequest.requested': true,
+      'cancellationRequest.adminResponse': 'pending'
+    })
+      .populate('userId', 'name email department')
+      .populate('items.productId', 'name description image category pointsCost')
+      .populate('cancellationRequest.requestedBy', 'name email department')
+      .sort({ 'cancellationRequest.requestedAt': -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Order.countDocuments({
+      'cancellationRequest.requested': true,
+      'cancellationRequest.adminResponse': 'pending'
+    });
+
+    return res.json({
+      status: 'success',
+      data: orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get cancellation requests error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch cancellation requests'
+    });
+  }
+});
+
+// Process cancellation request (approve/deny)
+router.patch('/orders/:orderId/cancellation-request', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { action, adminNotes = '' } = req.body;
+    const adminId = req.user._id;
+
+    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid order ID'
+      });
+    }
+
+    if (!['approve', 'deny'].includes(action)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid action. Must be "approve" or "deny"'
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Order not found'
+      });
+    }
+
+    if (!order.cancellationRequest.requested) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'No cancellation request found for this order'
+      });
+    }
+
+    if (order.cancellationRequest.adminResponse !== 'pending') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Cancellation request has already been processed'
+      });
+    }
+
+    // Update cancellation request
+    order.cancellationRequest.adminResponse = action === 'approve' ? 'approved' : 'denied';
+    order.cancellationRequest.adminNotes = adminNotes.trim();
+    order.cancellationRequest.processedAt = new Date();
+    order.cancellationRequest.processedBy = adminId;
+
+    // If approved, cancel the order and refund points
+    if (action === 'approve') {
+      order.status = 'cancelled';
+      order.processedAt = new Date();
+
+      // Refund points to user
+      const userPoints = await UserPoints.findOne({ userId: order.userId });
+      if (userPoints) {
+        userPoints.currentBalance += order.totalPoints;
+        userPoints.totalSpent -= order.totalPoints;
+        await userPoints.save();
+
+        // Create refund transaction
+        const refundTransaction = new Transaction({
+          userId: order.userId,
+          type: 'refund',
+          amount: order.totalPoints,
+          description: `Refund for cancelled order ${order.orderNumber || order._id}`,
+          metadata: {
+            orderId: order._id,
+            refundReason: 'Admin approved cancellation request'
+          }
+        });
+        await refundTransaction.save();
+      }
+
+      // Restore product inventory
+      for (const item of order.items) {
+        const product = await Product.findById(item.productId);
+        if (product && product.inventory !== null) {
+          product.inventory += item.quantity;
+          await product.save();
+        }
+      }
+    }
+
+    await order.save();
+
+    const updatedOrder = await Order.findById(orderId)
+      .populate('userId', 'name email department')
+      .populate('items.productId', 'name description image category pointsCost')
+      .populate('cancellationRequest.requestedBy', 'name email department')
+      .populate('cancellationRequest.processedBy', 'name email department');
+
+    return res.json({
+      status: 'success',
+      message: `Cancellation request ${action}d successfully`,
+      data: updatedOrder
+    });
+  } catch (error) {
+    console.error('Process cancellation request error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to process cancellation request'
     });
   }
 });

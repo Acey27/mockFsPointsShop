@@ -17,7 +17,6 @@ const PurchaseSuccessPage= () => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { refreshUserData } = useAuth();
   const purchaseData = location.state;
 
   useEffect(() => {
@@ -27,13 +26,16 @@ const PurchaseSuccessPage= () => {
       return;
     }
 
-    // Invalidate queries to ensure fresh data throughout the app
+    // The refresh is already handled by the ShopPage triggerPurchaseRefresh()
+    // No need to refresh again here as it causes excessive API calls
+    console.log('📄 Purchase success page loaded with data:', purchaseData);
+  }, [purchaseData, navigate]);
+
+  const handleViewOrderHistory = () => {
+    // Force refresh of order history before navigating
     queryClient.invalidateQueries({ queryKey: ['orderHistory'] });
-    queryClient.invalidateQueries({ queryKey: ['products'] });
-    
-    // Refresh user data to sync points
-    refreshUserData();
-  }, [purchaseData, navigate, queryClient, refreshUserData]);
+    navigate('/orders');
+  };
 
   if (!purchaseData) {
     return null;
@@ -188,13 +190,13 @@ const PurchaseSuccessPage= () => {
           <ShoppingBagIcon className="h-5 w-5 mr-2" />
           Continue Shopping
         </Link>
-        <Link
-          to="/orders"
+        <button
+          onClick={handleViewOrderHistory}
           className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
         >
           <DocumentTextIcon className="h-5 w-5 mr-2" />
           View Order History
-        </Link>
+        </button>
       </div>
 
       {/* Receipt ID */}

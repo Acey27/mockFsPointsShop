@@ -183,11 +183,27 @@ class ApiClient {
   }
 
   async addToCart(productId, quantity) {
-    await this.client.post('/api/shop/cart/add', { productId, quantity });
+    const response = await this.client.post('/api/shop/cart/add', { productId, quantity });
+    return response.data.data;
   }
 
   async getCart() {
     const response = await this.client.get('/api/shop/cart');
+    return response.data;
+  }
+
+  async updateCartItem(productId, quantity) {
+    const response = await this.client.patch('/api/shop/cart/update', { productId, quantity });
+    return response.data.data;
+  }
+
+  async removeFromCart(productId) {
+    const response = await this.client.delete(`/api/shop/cart/remove/${productId}`);
+    return response.data.data;
+  }
+
+  async clearCart() {
+    const response = await this.client.delete('/api/shop/cart/clear');
     return response.data.data;
   }
 
@@ -210,6 +226,20 @@ class ApiClient {
   // Get specific order with receipt
   async getOrderWithReceipt(orderId) {
     const response = await this.client.get(`/api/shop/orders/${orderId}`);
+    return response.data.data;
+  }
+
+  // Cancel order (user)
+  async cancelOrder(orderId) {
+    const response = await this.client.patch(`/api/shop/orders/${orderId}/cancel`);
+    return response.data.data;
+  }
+
+  // Request cancellation for completed orders
+  async requestOrderCancellation(orderId, reason = '') {
+    const response = await this.client.patch(`/api/shop/orders/${orderId}/request-cancellation`, {
+      reason
+    });
     return response.data.data;
   }
 
@@ -299,6 +329,20 @@ class ApiClient {
 
   async updateOrderStatus(orderId, status) {
     const response = await this.client.patch(`/api/admin/orders/${orderId}`, { status });
+    return response.data.data;
+  }
+
+  // Admin cancellation requests
+  async getCancellationRequests(params) {
+    const response = await this.client.get('/api/admin/orders/cancellation-requests', { params });
+    return response.data;
+  }
+
+  async processCancellationRequest(orderId, action, adminNotes = '') {
+    const response = await this.client.patch(`/api/admin/orders/${orderId}/cancellation-request`, {
+      action,
+      adminNotes
+    });
     return response.data.data;
   }
 

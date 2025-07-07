@@ -10,9 +10,15 @@ class PointsSchedulerService {
 
   /**
    * Start the automatic points distribution scheduler
-   * Uses configuration from pointsConfig
+   * DISABLED: Daily point distribution system has been removed
    */
   start() {
+    console.log('⚠️ Automatic points distribution is disabled');
+    console.log('💡 Points can only be earned through peer recognition (cheers) or admin actions');
+    return;
+    
+    // Original code commented out to disable the scheduler
+    /*
     if (this.isRunning) {
       console.log('⚠️ Points scheduler is already running');
       return;
@@ -32,6 +38,7 @@ class PointsSchedulerService {
     // Calculate next run description
     const scheduleInfo = this.getScheduleDescription(schedule);
     console.log(`✅ Points scheduler started - distributing ${pointsPerCycle} points ${scheduleInfo}`);
+    */
   }
 
   /**

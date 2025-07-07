@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
+import { useGlobalAutoRefresh } from './hooks/useUnifiedAutoRefresh';
 
 // Page components (we'll create these)
 import LoginPage from './pages/LoginPage';
@@ -54,8 +55,11 @@ const PublicRoute = ({ children }) => {
   return <>{children}</>;
 };
 
-// Main App component
+// Main App component with event-driven refresh
 const AppRoutes = () => {
+  // Enable event-driven auto-refresh for the entire application
+  useGlobalAutoRefresh();
+  
   return (
     <Routes>
       {/* Public routes */}

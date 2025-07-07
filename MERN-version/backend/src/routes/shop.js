@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
-import { Product, Order, UserPoints, Transaction } from '../models/index.js';
+import { Product, Order, UserPoints, Transaction, Cart } from '../models/index.js';
 import { validateObjectId } from '../utils/validation.js';
 import mongoose from 'mongoose';
 
@@ -87,6 +87,244 @@ router.get('/products/:productId', requireAuth, async (req, res) => {
     return res.json(product);
   } catch (error) {
     return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Cart management routes
+// Get user's cart
+router.get('/cart', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    let cart = await Cart.findByUserId(userId);
+    
+    if (!cart) {
+      cart = { items: [], totalPoints: 0 };
+    } else {
+      // Check if any items have incomplete product data and fetch manually
+      const itemsNeedingProductData = [];
+      
+      for (let i = 0; i < cart.items.length; i++) {
+        const item = cart.items[i];
+        if (!item.productId.name || !item.productId.image) {
+          itemsNeedingProductData.push(i);
+        }
+      }
+      
+      // Fetch missing product data
+      if (itemsNeedingProductData.length > 0) {
+        const Product = (await import('../models/Product.js')).default;
+        
+        for (const index of itemsNeedingProductData) {
+          const item = cart.items[index];
+          try {
+            const product = await Product.findById(item.productId._id);
+            if (product) {
+              // Merge the complete product data
+              cart.items[index].productId = {
+                _id: product._id,
+                name: product.name,
+                description: product.description,
+                image: product.image,
+                pointsCost: product.pointsCost,
+                category: product.category,
+                inventory: product.inventory,
+                isActive: product.isActive
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching product data:', error);
+          }
+        }
+      }
+      
+      // Calculate total points
+      cart.totalPoints = await cart.getTotal();
+    }
+    
+    return res.json({
+      status: 'success',
+      data: cart
+    });
+  } catch (error) {
+    console.error('Get cart error:', error);
+    return res.status(500).json({ 
+      status: 'error', 
+      message: 'Failed to fetch cart' 
+    });
+  }
+});
+
+// Add item to cart
+router.post('/cart/add', requireAuth, async (req, res) => {
+  try {
+    const { productId, quantity = 1 } = req.body;
+    const userId = req.user._id;
+
+    if (!productId || !validateObjectId(productId)) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Invalid product ID' 
+      });
+    }
+
+    if (quantity <= 0 || quantity > 10) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Quantity must be between 1 and 10' 
+      });
+    }
+
+    // Verify product exists and is active
+    const product = await Product.findById(productId);
+    if (!product || !product.isActive) {
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'Product not found or inactive' 
+      });
+    }
+
+    // Check stock
+    if (product.inventory !== null && product.inventory < quantity) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Insufficient stock' 
+      });
+    }
+
+    const cart = await Cart.createOrUpdate(userId, productId, quantity);
+    await cart.populate('items.productId', 'name description image pointsCost category inventory isActive');
+    
+    cart.totalPoints = await cart.getTotal();
+
+    return res.json({
+      status: 'success',
+      message: 'Item added to cart',
+      data: cart
+    });
+  } catch (error) {
+    console.error('Add to cart error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to add item to cart' 
+    });
+  }
+});
+
+// Update cart item quantity
+router.patch('/cart/update', requireAuth, async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+    const userId = req.user._id;
+
+    if (!productId || !validateObjectId(productId)) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Invalid product ID' 
+      });
+    }
+
+    if (quantity < 0 || quantity > 10) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Quantity must be between 0 and 10' 
+      });
+    }
+
+    let cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'Cart not found' 
+      });
+    }
+
+    await cart.updateItemQuantity(productId, quantity);
+    await cart.populate('items.productId', 'name description image pointsCost category inventory isActive');
+    
+    cart.totalPoints = await cart.getTotal();
+
+    return res.json({
+      status: 'success',
+      message: 'Cart updated',
+      data: cart
+    });
+  } catch (error) {
+    console.error('Update cart error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to update cart' 
+    });
+  }
+});
+
+// Remove item from cart
+router.delete('/cart/remove/:productId', requireAuth, async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const userId = req.user._id;
+
+    if (!productId || !validateObjectId(productId)) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Invalid product ID' 
+      });
+    }
+
+    let cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'Cart not found' 
+      });
+    }
+
+    await cart.removeItem(productId);
+    await cart.populate('items.productId', 'name description image pointsCost category inventory isActive');
+    
+    cart.totalPoints = await cart.getTotal();
+
+    return res.json({
+      status: 'success',
+      message: 'Item removed from cart',
+      data: cart
+    });
+  } catch (error) {
+    console.error('Remove from cart error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to remove item from cart' 
+    });
+  }
+});
+
+// Clear cart
+router.delete('/cart/clear', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    let cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.json({
+        status: 'success',
+        message: 'Cart already empty',
+        data: { items: [], totalPoints: 0 }
+      });
+    }
+
+    await cart.clearCart();
+    
+    return res.json({
+      status: 'success',
+      message: 'Cart cleared',
+      data: { items: [], totalPoints: 0 }
+    });
+  } catch (error) {
+    console.error('Clear cart error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to clear cart' 
+    });
   }
 });
 
@@ -247,6 +485,10 @@ router.get('/orders/history', requireAuth, async (req, res) => {
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const skip = (page - 1) * limit;
     const status = req.query.status;
+    const search = req.query.search;
+
+    console.log('Order history request - search param:', search, 'type:', typeof search);
+    console.log('All query params:', req.query);
 
     // Build query - ENSURE we filter by the current user only
     const query= { userId };
@@ -254,18 +496,104 @@ router.get('/orders/history', requireAuth, async (req, res) => {
       query.status = status;
     }
 
-    const orders = await Order.find(query)
-      .populate('items.productId', 'name description image category rating')
-      .populate('userId', 'name email department')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // Build query - ENSURE we filter by the current user only
+    const baseQuery = { userId };
+    if (status) {
+      baseQuery.status = status;
+    }
 
-    const total = await Order.countDocuments(query);
+    let orders;
+    let total;
+    
+    if (search) {
+      console.log('Search term:', search);
+      console.log('User ID:', userId);
+      
+      // Use aggregation for search
+      try {
+        orders = await Order.aggregate([
+          { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+          {
+            $lookup: {
+              from: 'products',
+              localField: 'items.productId',
+              foreignField: '_id',
+              as: 'productData'
+            }
+          },
+          {
+            $match: {
+              ...(status && { status }),
+              $or: [
+                { orderNumber: { $regex: search, $options: 'i' } },
+                { 'productData.name': { $regex: search, $options: 'i' } }
+              ]
+            }
+          },
+          { $sort: { createdAt: -1 } },
+          { $skip: skip },
+          { $limit: limit }
+        ]);
+        
+        console.log('Search results:', orders.length);
+        
+        // Get count
+        const countResult = await Order.aggregate([
+          { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+          {
+            $lookup: {
+              from: 'products',
+              localField: 'items.productId',
+              foreignField: '_id',
+              as: 'productData'
+            }
+          },
+          {
+            $match: {
+              ...(status && { status }),
+              $or: [
+                { orderNumber: { $regex: search, $options: 'i' } },
+                { 'productData.name': { $regex: search, $options: 'i' } }
+              ]
+            }
+          },
+          { $count: "total" }
+        ]);
+        total = countResult[0]?.total || 0;
+        
+        // Process aggregated results
+        for (let order of orders) {
+          if (order.items && order.productData) {
+            order.items = order.items.map(item => {
+              const productData = order.productData.find(p => p._id.toString() === item.productId.toString());
+              return {
+                ...item,
+                productId: productData || item.productId
+              };
+            });
+          }
+          delete order.productData;
+        }
+        
+      } catch (searchError) {
+        console.error('Search aggregation error:', searchError);
+        throw searchError;
+      }
+    } else {
+      // Regular query without search
+      orders = await Order.find(baseQuery)
+        .populate('items.productId', 'name description image category rating')
+        .populate('userId', 'name email department')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+        
+      total = await Order.countDocuments(baseQuery);
+    }
 
     // Generate receipts for each order
     const ordersWithReceipts = orders.map(order => {
-      const orderObj = order.toObject();
+      const orderObj = order.toObject ? order.toObject() : order;
       const receipt = {
         receiptId: `RCP-${order._id}`,
         orderNumber: orderObj.orderNumber || `ORD-${order._id}`,
@@ -313,9 +641,17 @@ router.get('/orders/history', requireAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Order history error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      userId: req.user._id,
+      search: req.query.search
+    });
     return res.status(500).json({
       status: 'error',
-      message: 'Failed to fetch order history'
+      message: 'Failed to fetch order history',
+      error: error.message
     });
   }
 });
@@ -831,10 +1167,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
         );
       }
 
-      // Create comprehensive transaction records
-      const transactions = [];
-
-      // Main purchase transaction
+      // Create comprehensive transaction record - SINGLE TRANSACTION PER ORDER
       const mainTransaction = new Transaction({
         toUserId: userId,
         type: 'spent',
@@ -849,34 +1182,21 @@ router.post('/checkout', requireAuth, async (req, res) => {
         }
       });
 
-      transactions.push(mainTransaction);
-
-      // Individual item transactions for detailed tracking
-      for (const detail of purchaseDetails) {
-        const itemTransaction = new Transaction({
-          toUserId: userId,
-          type: 'spent',
-          amount: detail.totalPoints,
-          description: `${detail.quantity}x ${detail.productName}`,
-          metadata: {
-            orderId: order._id,
-            orderNumber,
-            productId: detail.productId,
-            productName: detail.productName,
-            category: detail.category,
-            quantity: detail.quantity,
-            unitCost: detail.pointsCostPerItem,
-            transactionType: 'item_purchase'
-          }
-        });
-
-        transactions.push(itemTransaction);
-      }
-
-      // Save all transactions
-      await Transaction.insertMany(transactions, { session });
+      // Save the single transaction
+      await mainTransaction.save({ session });
 
       await session.commitTransaction();
+
+      // Clear user's cart after successful purchase
+      try {
+        const userCart = await Cart.findOne({ userId });
+        if (userCart) {
+          await userCart.clearCart();
+        }
+      } catch (cartError) {
+        console.warn('Failed to clear cart after purchase:', cartError);
+        // Don't fail the purchase if cart clearing fails
+      }
 
       // Generate detailed receipt
       const receipt = {
@@ -916,7 +1236,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
             .populate('userId', 'name email department'),
           receipt,
           newBalance: userPoints.availablePoints,
-          transactionIds: transactions.map((t) => t._id)
+          transactionId: mainTransaction._id
         }
       });
 
@@ -1031,6 +1351,167 @@ router.get('/orders/:orderId/receipt', requireAuth, async (req, res) => {
     return res.status(500).json({
       status: 'error',
       message: 'Failed to fetch order details'
+    });
+  }
+});
+
+// Cancel order by user (only pending orders)
+router.patch('/orders/:orderId/cancel', requireAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user._id;
+
+    if (!orderId || !validateObjectId(orderId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid order ID'
+      });
+    }
+
+    const order = await Order.findOne({ _id: orderId, userId });
+
+    if (!order) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Order not found'
+      });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Only pending orders can be cancelled'
+      });
+    }
+
+    // Update order status
+    order.status = 'cancelled';
+    order.cancelledAt = new Date();
+    await order.save();
+
+    // Refund points to user
+    const userPoints = await UserPoints.findOne({ userId });
+    if (userPoints) {
+      userPoints.availablePoints += order.totalPoints;
+      userPoints.totalSpent -= order.totalPoints;
+      await userPoints.save();
+
+      // Create refund transaction
+      const transaction = new Transaction({
+        toUserId: userId,
+        type: 'refund',
+        amount: order.totalPoints,
+        description: `Refund for cancelled order ${order.orderNumber || order._id}`,
+        metadata: {
+          orderId: order._id,
+          refundReason: 'Order cancelled by user'
+        }
+      });
+
+      await transaction.save();
+    }
+
+    // Restore product inventory
+    for (const item of order.items) {
+      const product = await Product.findById(item.productId);
+      if (product && product.inventory !== null) {
+        product.inventory += item.quantity;
+        await product.save();
+      }
+    }
+
+    const updatedOrder = await Order.findById(orderId)
+      .populate('items.productId', 'name description image category')
+      .populate('userId', 'name email department');
+
+    return res.json({
+      status: 'success',
+      message: 'Order cancelled successfully',
+      data: updatedOrder
+    });
+  } catch (error) {
+    console.error('Cancel order error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to cancel order'
+    });
+  }
+});
+
+// Request cancellation for completed orders
+router.patch('/orders/:orderId/request-cancellation', requireAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { reason = '' } = req.body;
+    const userId = req.user._id;
+
+    if (!orderId || !validateObjectId(orderId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid order ID'
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Order not found'
+      });
+    }
+
+    // Check if user owns the order
+    if (order.userId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Unauthorized to request cancellation for this order'
+      });
+    }
+
+    // Check if order is in a state that allows cancellation requests
+    if (order.status !== 'completed') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Only completed orders can request cancellation'
+      });
+    }
+
+    // Check if cancellation request already exists
+    if (order.cancellationRequest.requested) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Cancellation request already submitted for this order'
+      });
+    }
+
+    // Update order with cancellation request
+    order.cancellationRequest = {
+      requested: true,
+      requestedAt: new Date(),
+      requestedBy: userId,
+      reason: reason.trim(),
+      adminResponse: 'pending',
+      adminNotes: '',
+      processedAt: null,
+      processedBy: null
+    };
+
+    await order.save();
+
+    const updatedOrder = await Order.findById(orderId)
+      .populate('items.productId', 'name description image category')
+      .populate('userId', 'name email department');
+
+    return res.json({
+      status: 'success',
+      message: 'Cancellation request submitted successfully',
+      data: updatedOrder
+    });
+  } catch (error) {
+    console.error('Request cancellation error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to submit cancellation request'
     });
   }
 });

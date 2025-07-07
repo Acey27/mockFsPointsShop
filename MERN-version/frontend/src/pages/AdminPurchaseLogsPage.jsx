@@ -1,42 +1,86 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { apiClient } from '../lib/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useEventDrivenRefresh } from '../hooks/useUnifiedAutoRefresh';
 import {
   ShoppingBagIcon,
-  CalendarIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
-  ChevronDownIcon,
   EyeIcon,
   UserIcon,
   CurrencyDollarIcon,
   ClockIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 const AdminPurchaseLogsPage= () => {
   const { user, isAuthenticated } = useAuth();
+  const { triggerOrderCancelRefresh } = useEventDrivenRefresh();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [dateRange, setDateRange] = useState('30');
 
+  // Debounce search term
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [statusFilter, dateRange, debouncedSearchTerm]);
+
   const { data: ordersData, isLoading, error } = useQuery({
-    queryKey: ['adminOrders', page, statusFilter, dateRange],
+    queryKey: ['adminOrders', page, statusFilter, dateRange, debouncedSearchTerm],
     queryFn: () => {
       console.log('Fetching admin orders...'); // Debug log
       return apiClient.getAdminOrders({ 
         page, 
         limit: 20,
         ...(statusFilter !== 'all' && { status: statusFilter }),
-        ...(dateRange !== 'all' && { days: parseInt(dateRange) })
+        ...(dateRange !== 'all' && { days: parseInt(dateRange) }),
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       });
     },
     enabled: !!isAuthenticated && !!user && user.role === 'admin', // Only run for authenticated admins
   });
+
+  // Query for pending cancellation requests
+  const { data: cancellationRequestsData, isLoading: isCancellationRequestsLoading } = useQuery({
+    queryKey: ['cancellationRequests'],
+    queryFn: () => apiClient.getCancellationRequests({ limit: 50 }),
+    enabled: !!isAuthenticated && !!user && user.role === 'admin',
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+
+  // Process cancellation request mutation
+  const processCancellationMutation = useMutation({
+    mutationFn: ({ orderId, action, adminNotes }) => 
+      apiClient.processCancellationRequest(orderId, action, adminNotes),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['cancellationRequests']);
+      queryClient.invalidateQueries(['adminOrders']);
+      alert('Cancellation request processed successfully!');
+    },
+    onError: (error) => {
+      alert(error.message || 'Failed to process cancellation request');
+    }
+  });
+
+  // Auto-refresh is now handled globally
 
   // Debug log
   React.useEffect(() => {
@@ -68,14 +112,9 @@ const AdminPurchaseLogsPage= () => {
   const orders = ordersData?.data || [];
   const pagination = ordersData?.pagination;
 
-  const filteredOrders = orders.filter((order) =>
-    order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.items.some((item) => 
-      item.productId.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  // Remove redundant frontend filtering - backend already handles search
+  // Using filteredOrders = orders since backend filtering is sufficient
+  const filteredOrders = orders;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -91,6 +130,11 @@ const AdminPurchaseLogsPage= () => {
   };
 
   const exportToCSV = () => {
+    if (filteredOrders.length === 0) {
+      alert('No orders to export');
+      return;
+    }
+
     const csvData = filteredOrders.map((order) => ({
       'Order Number': order.orderNumber,
       'Customer': order.userId?.name || 'Unknown',
@@ -99,12 +143,17 @@ const AdminPurchaseLogsPage= () => {
       'Status': order.status,
       'Items': order.items.length,
       'Total Points': order.totalPoints,
-      'Products': order.items.map((item) => item.productId.name).join('; ')
+      'Products': order.items.map((item) => item.productId?.name || 'Unknown Product').join('; ')
     }));
 
     const csv = [
       Object.keys(csvData[0]).join(','),
-      ...csvData.map(row => Object.values(row).join(','))
+      ...csvData.map(row => Object.values(row).map(value => 
+        // Escape values that contain commas or quotes
+        typeof value === 'string' && (value.includes(',') || value.includes('"')) 
+          ? `"${value.replace(/"/g, '""')}"` 
+          : value
+      ).join(','))
     ].join('\n');
 
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -113,6 +162,9 @@ const AdminPurchaseLogsPage= () => {
     a.href = url;
     a.download = `purchase-logs-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+    
+    // Clean up the URL object
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -189,57 +241,68 @@ const AdminPurchaseLogsPage= () => {
         </div>
       </div>
 
+      {/* Pending Cancellation Requests */}
+      {cancellationRequestsData?.data?.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-orange-200">
+          <div className="px-6 py-4 border-b border-orange-100">
+            <div className="flex items-center">
+              <ExclamationTriangleIcon className="h-6 w-6 text-orange-600 mr-2" />
+              <h2 className="text-lg font-semibold text-orange-800">
+                Pending Cancellation Requests ({cancellationRequestsData.data.length})
+              </h2>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {cancellationRequestsData.data.map((order) => (
+              <CancellationRequestCard
+                key={order._id}
+                order={order}
+                onProcess={processCancellationMutation.mutate}
+                isProcessing={processCancellationMutation.isPending}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Search */}
-          <div className="lg:col-span-2">
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search orders, customers, or products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
-
-          {/* Status Filter */}
           <div>
-            <div className="relative">
-              <FunnelIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="pl-10 pr-8 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-              >
-                <option value="all">All Status</option>
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
           </div>
-
-          {/* Date Range */}
           <div>
-            <div className="relative">
-              <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <select
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="pl-10 pr-8 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-              >
-                <option value="7">Last 7 days</option>
-                <option value="30">Last 30 days</option>
-                <option value="90">Last 90 days</option>
-                <option value="all">All time</option>
-              </select>
-              <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            </div>
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="all">All time</option>
+            </select>
           </div>
         </div>
       </div>
@@ -342,7 +405,7 @@ const AdminPurchaseLogsPage= () => {
         )}
 
         {/* Pagination */}
-        {pagination && pagination.pages > 1 && (
+        {pagination && pagination.totalPages > 1 && (
           <div className="px-6 py-3 border-t border-gray-200 flex justify-between items-center">
             <div className="text-sm text-gray-700">
               Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, pagination.total)} of {pagination.total} orders
@@ -356,11 +419,11 @@ const AdminPurchaseLogsPage= () => {
                 Previous
               </button>
               <span className="px-3 py-1 text-sm text-gray-700">
-                Page {page} of {pagination.pages}
+                Page {page} of {pagination.totalPages}
               </span>
               <button
                 onClick={() => setPage(page + 1)}
-                disabled={page >= pagination.pages}
+                disabled={page >= pagination.totalPages}
                 className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
@@ -511,6 +574,107 @@ const AdminOrderDetailsModal = ({ order, onClose }) => {
               )}
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CancellationRequestCard = ({ order, onProcess, isProcessing }) => {
+  const handleApprove = () => {
+    const adminNotes = window.prompt('Add notes for approval (optional):');
+    if (adminNotes !== null) { // User didn't cancel
+      onProcess({ orderId: order._id, action: 'approve', adminNotes });
+    }
+  };
+
+  const handleDeny = () => {
+    const adminNotes = window.prompt('Add notes for denial (required):');
+    if (adminNotes !== null && adminNotes.trim()) { // User didn't cancel and provided notes
+      onProcess({ orderId: order._id, action: 'deny', adminNotes });
+    } else if (adminNotes !== null) {
+      alert('Please provide a reason for denial.');
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center space-x-4 mb-3">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Order #{order.orderNumber}
+            </h3>
+            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+              Cancellation Requested
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-sm text-gray-600">Customer</p>
+              <p className="font-medium">{order.userId?.name || 'Unknown'}</p>
+              <p className="text-sm text-gray-500">{order.userId?.email || 'Unknown'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Order Date</p>
+              <p className="font-medium">{new Date(order.createdAt).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Points</p>
+              <p className="font-medium">{order.totalPoints} points</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Request Date</p>
+              <p className="font-medium">{new Date(order.cancellationRequest.requestedAt).toLocaleDateString()}</p>
+            </div>
+          </div>
+
+          {order.cancellationRequest.reason && (
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">Reason for Cancellation</p>
+              <p className="text-sm bg-gray-50 p-3 rounded-lg">{order.cancellationRequest.reason}</p>
+            </div>
+          )}
+
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-2">Items ({order.items.length})</p>
+            <div className="space-y-2">
+              {order.items.slice(0, 3).map((item, index) => (
+                <div key={index} className="flex items-center space-x-3 text-sm">
+                  <img
+                    src={item.productId.image}
+                    alt={item.productId.name}
+                    className="w-8 h-8 object-cover rounded"
+                  />
+                  <span>{item.productId.name} × {item.quantity}</span>
+                  <span className="text-gray-500">({item.totalPoints} pts)</span>
+                </div>
+              ))}
+              {order.items.length > 3 && (
+                <p className="text-sm text-gray-500">+{order.items.length - 3} more items</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex space-x-2 ml-4">
+          <button
+            onClick={handleApprove}
+            disabled={isProcessing}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <CheckCircleIcon className="h-4 w-4 mr-2" />
+            {isProcessing ? 'Processing...' : 'Approve'}
+          </button>
+          <button
+            onClick={handleDeny}
+            disabled={isProcessing}
+            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <XMarkIcon className="h-4 w-4 mr-2" />
+            {isProcessing ? 'Processing...' : 'Deny'}
+          </button>
         </div>
       </div>
     </div>

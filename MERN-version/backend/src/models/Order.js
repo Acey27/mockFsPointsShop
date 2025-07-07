@@ -54,6 +54,45 @@ const orderSchema = new Schema({
     enum: ['pending', 'processing', 'completed', 'cancelled', 'refunded'],
     default: 'pending'
   },
+  cancellationRequest: {
+    requested: {
+      type: Boolean,
+      default: false
+    },
+    requestedAt: {
+      type: Date,
+      default: null
+    },
+    requestedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    reason: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Cancellation reason cannot exceed 500 characters']
+    },
+    adminResponse: {
+      type: String,
+      enum: ['pending', 'approved', 'denied'],
+      default: 'pending'
+    },
+    adminNotes: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Admin notes cannot exceed 1000 characters']
+    },
+    processedAt: {
+      type: Date,
+      default: null
+    },
+    processedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    }
+  },
   shippingAddress: {
     name: { type: String, trim: true },
     email: { type: String, trim: true },

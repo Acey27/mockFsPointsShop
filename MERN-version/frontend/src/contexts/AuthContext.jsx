@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 // Types are now documented as JSDoc in ../types/index.js
 import { apiClient } from '../lib/api';
@@ -69,6 +69,34 @@ export const AuthProvider= ({ children }) => {
     return () => window.removeEventListener('auth:logout', handleAuthLogout);
   }, []);
 
+  const refreshUserData = useCallback(async () => {
+    try {
+      if (!user) return;
+      
+      console.log('Refreshing user data...'); // Debug log
+      const userData = await apiClient.getCurrentUser();
+      console.log('Refreshed user data:', userData); // Debug log
+      setUser(userData.user);
+      setPoints(userData.points);
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+      toast.error('Failed to refresh user data');
+    }
+  }, [user]);
+
+  // Listen for user data update events
+  useEffect(() => {
+    const handleUserDataUpdate = () => {
+      console.log('📡 Received user data update event, refreshing...');
+      if (user) {
+        refreshUserData();
+      }
+    };
+
+    window.addEventListener('user-data-updated', handleUserDataUpdate);
+    return () => window.removeEventListener('user-data-updated', handleUserDataUpdate);
+  }, [user]); // Removed refreshUserData from dependencies to prevent excessive re-registering
+
   const login = async (email, password) => {
     try {
       setIsLoading(true);
@@ -116,21 +144,6 @@ export const AuthProvider= ({ children }) => {
       queryClient.clear();
       
       toast.success('Logged out successfully');
-    }
-  };
-
-  const refreshUserData = async () => {
-    try {
-      if (!user) return;
-      
-      console.log('Refreshing user data...'); // Debug log
-      const userData = await apiClient.getCurrentUser();
-      console.log('Refreshed user data:', userData); // Debug log
-      setUser(userData.user);
-      setPoints(userData.points);
-    } catch (error) {
-      console.error('Failed to refresh user data:', error);
-      toast.error('Failed to refresh user data');
     }
   };
 

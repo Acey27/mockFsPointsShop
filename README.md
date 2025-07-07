@@ -34,7 +34,7 @@ npm run dev
 ```
 
 🎉 **That's it!** The application will be available at:
-- **Frontend**: http://localhost:5175
+- **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3001
 - **Database Admin**: http://localhost:8081 (Mongo Express)
 
@@ -152,7 +152,7 @@ The application comes with pre-loaded demo accounts:
 
 Once running, you can access:
 
-- **🎨 Frontend Application**: http://localhost:5175
+- **🎨 Frontend Application**: http://localhost:5173
 - **🔌 Backend API**: http://localhost:3001
 - **📊 Database Admin (Mongo Express)**: http://localhost:8081
 - **❤️ Health Check**: http://localhost:3001/health
@@ -319,8 +319,8 @@ The application uses MongoDB with the following collections:
 
 **🐛 Port already in use**
 ```bash
-# If ports 3001 or 5175 are busy, kill the processes:
-npx kill-port 3001 5175
+# If ports 3001 or 5173 are busy, kill the processes:
+npx kill-port 3001 5173
 ```
 
 **🐳 Docker issues**
