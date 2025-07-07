@@ -19,6 +19,7 @@ import pointsRoutes from './routes/points.js';
 import shopRoutes from './routes/shop.js';
 import moodRoutes from './routes/mood.js';
 import adminRoutes from './routes/admin.js';
+import cheerRoutes from './routes/cheer.js';
 
 const app = express();
 
@@ -73,8 +74,25 @@ const limiter = rateLimit({
   legacyHeaders: false,
   skip: (req) => {
     // Skip rate limiting for health checks and certain endpoints
-    return req.path === '/health' || req.path === '/api/health';
+    if (req.path === '/health' || req.path === '/api/health') {
+      return true;
+    }
+    // More lenient rate limiting in development
+    if (config.NODE_ENV === 'development') {
+      return false; // Still apply rate limiting but with higher limits
+    }
+    return false;
   }
+});
+
+// More lenient rate limiting for auth endpoints in development
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: config.NODE_ENV === 'development' ? 50 : 10, // 50 in dev, 10 in production
+  message: rateLimitHandler,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful requests
 });
 
 app.use('/api/', limiter);
@@ -132,6 +150,7 @@ app.get('/api/health', optionalDatabase, async (req, res) => {
       pointsSystem: true,
       shop: true,
       moodTracking: true,
+      cheerPeer: true,
       adminPanel: true
     }
   };
@@ -210,12 +229,13 @@ app.get('/api/demo/products', (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/points', pointsRoutes);
 app.use('/api/shop', shopRoutes);
 app.use('/api/mood', moodRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/cheer', cheerRoutes);
 
 // API documentation (if enabled)
 if (config.ENABLE_SWAGGER) {
@@ -230,6 +250,7 @@ if (config.ENABLE_SWAGGER) {
         points: '/api/points',
         shop: '/api/shop',
         mood: '/api/mood',
+        cheer: '/api/cheer',
         admin: '/api/admin'
       }
     });

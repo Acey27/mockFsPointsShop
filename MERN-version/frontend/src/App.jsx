@@ -15,6 +15,7 @@ import ProfilePage from './pages/ProfilePage';
 import PurchaseSuccessPage from './pages/PurchaseSuccessPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
 import AdminPurchaseLogsPage from './pages/AdminPurchaseLogsPage';
+import CheerPage from './pages/CheerPage';
 
 // Layout components
 import Layout from './components/Layout';
@@ -90,6 +91,7 @@ const AppRoutes = () => {
         <Route path="points" element={<PointsPage />} />
         <Route path="shop" element={<ShopPage />} />
         <Route path="mood" element={<MoodPage />} />
+        <Route path="cheer" element={<CheerPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="purchase-success" element={<PurchaseSuccessPage />} />
         <Route path="orders" element={<OrderHistoryPage />} />

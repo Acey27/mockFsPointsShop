@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 import { useCheer } from '../hooks/useCheer';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -32,16 +32,21 @@ const PointsPage = () => {
     }
   });
 
-  // Fetch points data with reasonable refresh settings
+  // Fetch points data with aggressive refresh for heartbits updates
   const { data: points, isLoading: pointsLoading } = useQuery({
     queryKey: ['points'],
-    queryFn: async () => {
-      console.log('🔍 PointsPage - Fetching fresh points data...');
-      const result = await apiClient.getPoints();
-      console.log('📊 PointsPage - Fresh points data received:', result);
-      return result;
+    queryFn: () => apiClient.getPoints(),
+    staleTime: 0, // Always consider stale for immediate updates
+    cacheTime: 30 * 1000, // 30 seconds cache
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 429) return false;
+      return failureCount < 2;
     },
-    staleTime: 1 * 60 * 1000, // 1 minute
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+    staleTime: 2 * 60 * 1000, // 2 minutes
     cacheTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
     refetchOnMount: true,
@@ -50,6 +55,13 @@ const PointsPage = () => {
       return failureCount < 2;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+
+  // Debug logging for PointsPage
+  console.log('📊 PointsPage - Points data:', {
+    monthlyCheerUsed: points?.monthlyCheerUsed,
+    monthlyCheerLimit: points?.monthlyCheerLimit,
+    timestamp: new Date().toISOString()
   });
 
   // Fetch users for cheering (non-admin endpoint)
@@ -282,7 +294,14 @@ const PointsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Available Points</p>
-              <p className="text-3xl font-bold text-blue-900">{points?.availablePoints || 0}</p>
+              {pointsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <LoadingSpinner size="sm" />
+                  <span className="text-sm text-gray-500">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-3xl font-bold text-blue-900">{points?.availablePoints || 0}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">Ready to use</p>
             </div>
             <ChartBarIcon className="w-8 h-8 text-blue-600" />
@@ -293,7 +312,14 @@ const PointsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Earned</p>
-              <p className="text-3xl font-bold text-green-700">{points?.totalEarned || 0}</p>
+              {pointsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <LoadingSpinner size="sm" />
+                  <span className="text-sm text-gray-500">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-3xl font-bold text-green-700">{points?.totalEarned || 0}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">All time earnings</p>
             </div>
             <TrophyIcon className="w-8 h-8 text-green-600" />
@@ -304,7 +330,14 @@ const PointsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Spent</p>
-              <p className="text-3xl font-bold text-red-700">{points?.totalSpent || 0}</p>
+              {pointsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <LoadingSpinner size="sm" />
+                  <span className="text-sm text-gray-500">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-3xl font-bold text-red-700">{points?.totalSpent || 0}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">All time spending</p>
             </div>
             <GiftIcon className="w-8 h-8 text-red-600" />
@@ -314,12 +347,19 @@ const PointsPage = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-pink-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Monthly Cheer Usage</p>
-              <p className="text-3xl font-bold text-pink-700">
-                {points?.monthlyCheerUsed || 0}/{points?.monthlyCheerLimit || 100}
-              </p>
+              <p className="text-sm font-medium text-gray-600">Heartbits Used</p>
+              {pointsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <LoadingSpinner size="sm" />
+                  <span className="text-sm text-gray-500">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-3xl font-bold text-pink-700">
+                  {points?.monthlyCheerUsed || 0}/{points?.monthlyCheerLimit || 100}
+                </p>
+              )}
               <p className="text-xs text-gray-500 mt-1">
-                {((points?.monthlyCheerUsed || 0) / (points?.monthlyCheerLimit || 100) * 100).toFixed(0)}% used
+                {pointsLoading ? 'Loading...' : `${((points?.monthlyCheerUsed || 0) / (points?.monthlyCheerLimit || 100) * 100).toFixed(0)}% of monthly limit used`}
               </p>
             </div>
             <HeartIcon className="w-8 h-8 text-pink-600" />
@@ -514,7 +554,7 @@ const PointsPage = () => {
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Cheer a Peer</h3>
               <p className="text-sm text-gray-600 mt-1">
-                Monthly cheer limit: {points?.monthlyCheerUsed || 0}/{points?.monthlyCheerLimit || 100} points used
+                Heartbits: {points?.monthlyCheerUsed || 0}/{points?.monthlyCheerLimit || 100} used this month
               </p>
             </div>
             <form onSubmit={handleCheer} className="p-6 space-y-4">

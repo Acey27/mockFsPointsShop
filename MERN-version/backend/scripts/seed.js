@@ -1,5 +1,5 @@
 import { database } from '../src/config/database.js';
-import { User, UserPoints, Product, Transaction, Mood } from '../src/models/index.js';
+import { User, UserPoints, Product, Transaction, Mood, Cheer } from '../src/models/index.js';
 import bcrypt from 'bcryptjs';
 
 // Sample data
@@ -166,12 +166,10 @@ const seedDatabase = async () => {
     
     // Create users
     console.log('👥 Creating users...');
-    const users: Array<InstanceType<typeof User>> = [];
+    const users = [];
     for (const userData of sampleUsers) {
-      const hashedPassword = await bcrypt.hash(userData.password, 12);
       const user = await User.create({
-        ...userData,
-        password: hashedPassword
+        ...userData
       });
       users.push(user);
       console.log(`  ✓ Created user: ${user.name} (${user.email})`);
@@ -179,7 +177,7 @@ const seedDatabase = async () => {
     
     // Create user points for each user
     console.log('💰 Creating user points...');
-    const userPointsData: Array<InstanceType<typeof UserPoints>> = [];
+    const userPointsData = [];
     for (const user of users) {
       const initialPoints = user.role === 'admin' ? 10000 : Math.floor(Math.random() * 500) + 100;
       const userPoints = await UserPoints.create({
@@ -197,7 +195,7 @@ const seedDatabase = async () => {
     
     // Create products
     console.log('🛒 Creating products...');
-    const products: Array<InstanceType<typeof Product>> = [];
+    const products = [];
     for (const productData of sampleProducts) {
       const product = await Product.create(productData);
       products.push(product);
@@ -208,7 +206,7 @@ const seedDatabase = async () => {
     console.log('💸 Creating sample transactions...');
     const regularUsers = users.filter(u => u.role === 'user');
     
-    // Create some cheer transactions
+    // Create some simple transactions (without using the complex transaction method for seeding)
     for (let i = 0; i < 10; i++) {
       const fromUser = regularUsers[Math.floor(Math.random() * regularUsers.length)];
       const toUser = regularUsers[Math.floor(Math.random() * regularUsers.length)];
@@ -227,7 +225,25 @@ const seedDatabase = async () => {
         ];
         const message = messages[Math.floor(Math.random() * messages.length)];
         
-        await Transaction.createCheerTransaction(fromUser._id, toUser._id, amount, message);
+        // Create simple transaction records
+        await Transaction.create({
+          fromUserId: fromUser._id,
+          toUserId: toUser._id,
+          type: 'given',
+          amount,
+          description: `Cheered ${toUser.name}`,
+          message
+        });
+        
+        await Transaction.create({
+          fromUserId: fromUser._id,
+          toUserId: toUser._id,
+          type: 'received',
+          amount,
+          description: `Received cheer from ${fromUser.name}`,
+          message
+        });
+        
         console.log(`  ✓ ${fromUser.name} cheered ${toUser.name} with ${amount} points`);
       }
     }
@@ -267,12 +283,97 @@ const seedDatabase = async () => {
       console.log(`  ✓ Created mood entries for ${user.name}`);
     }
     
+    // Seed sample cheers
+    console.log('\n🎉 Seeding sample cheers...');
+    
+    // Sample cheer messages
+    const cheerMessages = [
+      "Great job on the presentation! You really nailed it.",
+      "Thanks for helping me with the project. You're awesome!",
+      "Your positive attitude always brightens my day.",
+      "Amazing work on the new feature implementation.",
+      "You're such a team player, always willing to help others.",
+      "Your creativity and innovation inspire us all.",
+      "Thank you for going above and beyond on this task.",
+      "Your attention to detail is impressive.",
+      "You handled that difficult situation with grace.",
+      "Your leadership skills are truly outstanding.",
+      "Thanks for being such a great mentor.",
+      "Your problem-solving skills are incredible.",
+      "You always bring such positive energy to the team.",
+      "Your dedication to quality is admirable.",
+      "Thanks for always being reliable and dependable."
+    ];
+
+    // Clear existing cheers
+    await Cheer.deleteMany({});
+    
+    // Create sample cheers
+    const cheersToCreate = [];
+    
+    // Create some recent cheers (last 30 days)
+    for (let i = 0; i < 25; i++) {
+      const fromUser = users[Math.floor(Math.random() * users.length)];
+      let toUser = users[Math.floor(Math.random() * users.length)];
+      
+      // Ensure fromUser and toUser are different
+      while (fromUser._id.equals(toUser._id)) {
+        toUser = users[Math.floor(Math.random() * users.length)];
+      }
+      
+      const message = cheerMessages[Math.floor(Math.random() * cheerMessages.length)];
+      const points = Math.floor(Math.random() * 5) + 1; // 1-5 points
+      
+      // Random date within last 30 days
+      const randomDate = new Date();
+      randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 30));
+      
+      cheersToCreate.push({
+        fromUser: fromUser._id,
+        toUser: toUser._id,
+        message,
+        points,
+        createdAt: randomDate
+      });
+    }
+
+    // Create some cheers from this week
+    for (let i = 0; i < 15; i++) {
+      const fromUser = users[Math.floor(Math.random() * users.length)];
+      let toUser = users[Math.floor(Math.random() * users.length)];
+      
+      // Ensure fromUser and toUser are different
+      while (fromUser._id.equals(toUser._id)) {
+        toUser = users[Math.floor(Math.random() * users.length)];
+      }
+      
+      const message = cheerMessages[Math.floor(Math.random() * cheerMessages.length)];
+      const points = Math.floor(Math.random() * 5) + 1; // 1-5 points
+      
+      // Random date within this week
+      const randomDate = new Date();
+      randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 7));
+      
+      cheersToCreate.push({
+        fromUser: fromUser._id,
+        toUser: toUser._id,
+        message,
+        points,
+        createdAt: randomDate
+      });
+    }
+
+    // Insert cheers
+    await Cheer.insertMany(cheersToCreate);
+    console.log(`✅ Created ${cheersToCreate.length} sample cheers`);
+    
     console.log('✅ Database seeding completed successfully!');
     console.log(`\n📊 Summary:`);
     console.log(`   Users: ${users.length}`);
     console.log(`   Products: ${products.length}`);
     console.log(`   Transactions: ~10 cheer transactions`);
     console.log(`   Mood entries: ${regularUsers.length * 7}`);
+    console.log(`   Cheers: ${cheersToCreate.length}`);
     
     console.log(`\n🔐 Login credentials:`);
     console.log(`   Admin: admin@pointsshop.com / Admin123!`);

@@ -1,0 +1,1200 @@
+{
+  "timestamp": "2025-07-03T05:32:46.364Z",
+  "collections": {
+    "users": [
+      {
+        "_id": "6866135874f648805bb23545",
+        "email": "admin@pointsshop.com",
+        "name": "Admin User",
+        "department": "Administration",
+        "avatar": "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100",
+        "role": "admin",
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:28.697Z",
+        "updatedAt": "2025-07-03T05:21:28.697Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135974f648805bb23547",
+        "email": "zeann.palma@company.com",
+        "name": "Zeann Palma",
+        "department": "Engineering",
+        "avatar": "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:29.401Z",
+        "updatedAt": "2025-07-03T05:21:29.401Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135a74f648805bb2354d",
+        "email": "francis.jelo@company.com",
+        "name": "Francis Jelo",
+        "department": "Design",
+        "avatar": "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:30.111Z",
+        "updatedAt": "2025-07-03T05:21:30.111Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135a74f648805bb2354f",
+        "email": "jasfer.delacruz@company.com",
+        "name": "Jasfer DelaCruz",
+        "department": "Marketing",
+        "avatar": "https://images.pexels.com/photos/718978/pexels-photo-718978.jpeg?auto=compress&cs=tinysrgb&w=100",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:30.804Z",
+        "updatedAt": "2025-07-03T05:21:30.804Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135b74f648805bb23551",
+        "email": "czar.reenjit@company.com",
+        "name": "Czar Reenjit",
+        "department": "Sales",
+        "avatar": "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=100",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:31.516Z",
+        "updatedAt": "2025-07-03T05:21:31.516Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135c74f648805bb23553",
+        "email": "john.smith@company.com",
+        "name": "John Smith",
+        "department": "HR",
+        "avatar": "https://images.pexels.com/photos/697509/pexels-photo-697509.jpeg?auto=compress&cs=tinysrgb&w=100",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:32.212Z",
+        "updatedAt": "2025-07-03T05:21:32.212Z",
+        "__v": 0
+      }
+    ],
+    "userPoints": [
+      {
+        "_id": "6866135c74f648805bb23555",
+        "userId": "6866135874f648805bb23545",
+        "availablePoints": 10000,
+        "totalEarned": 10000,
+        "totalSpent": 0,
+        "monthlyCheerLimit": 100,
+        "monthlyCheerUsed": 23,
+        "lastMonthlyReset": "2025-07-03T05:21:32.639Z",
+        "lastTransactionAt": null,
+        "updatedAt": "2025-07-03T05:21:32.640Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135c74f648805bb23557",
+        "userId": "6866135974f648805bb23547",
+        "availablePoints": 195,
+        "totalEarned": 195,
+        "totalSpent": 0,
+        "monthlyCheerLimit": 100,
+        "monthlyCheerUsed": 24,
+        "lastMonthlyReset": "2025-07-03T05:21:32.818Z",
+        "lastTransactionAt": null,
+        "updatedAt": "2025-07-03T05:21:32.820Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135d74f648805bb23559",
+        "userId": "6866135a74f648805bb2354d",
+        "availablePoints": 452,
+        "totalEarned": 452,
+        "totalSpent": 0,
+        "monthlyCheerLimit": 100,
+        "monthlyCheerUsed": 24,
+        "lastMonthlyReset": "2025-07-03T05:21:33.029Z",
+        "lastTransactionAt": null,
+        "updatedAt": "2025-07-03T05:21:33.029Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135d74f648805bb2355b",
+        "userId": "6866135a74f648805bb2354f",
+        "availablePoints": 297,
+        "totalEarned": 297,
+        "totalSpent": 0,
+        "monthlyCheerLimit": 100,
+        "monthlyCheerUsed": 11,
+        "lastMonthlyReset": "2025-07-03T05:21:33.241Z",
+        "lastTransactionAt": null,
+        "updatedAt": "2025-07-03T05:21:33.242Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135d74f648805bb2355d",
+        "userId": "6866135b74f648805bb23551",
+        "availablePoints": 582,
+        "totalEarned": 582,
+        "totalSpent": 0,
+        "monthlyCheerLimit": 100,
+        "monthlyCheerUsed": 4,
+        "lastMonthlyReset": "2025-07-03T05:21:33.452Z",
+        "lastTransactionAt": null,
+        "updatedAt": "2025-07-03T05:21:33.453Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135d74f648805bb2355f",
+        "userId": "6866135c74f648805bb23553",
+        "availablePoints": 172,
+        "totalEarned": 172,
+        "totalSpent": 0,
+        "monthlyCheerLimit": 100,
+        "monthlyCheerUsed": 14,
+        "lastMonthlyReset": "2025-07-03T05:21:33.662Z",
+        "lastTransactionAt": null,
+        "updatedAt": "2025-07-03T05:21:33.663Z",
+        "__v": 0
+      }
+    ],
+    "products": [
+      {
+        "_id": "6866135d74f648805bb23561",
+        "name": "Company T-Shirt",
+        "description": "Premium cotton t-shirt with company logo. Available in multiple sizes and colors.",
+        "image": "https://images.pexels.com/photos/8532616/pexels-photo-8532616.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 150,
+        "category": "apparel",
+        "inventory": 25,
+        "rating": 4.5,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:33.860Z",
+        "updatedAt": "2025-07-03T05:21:33.860Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135e74f648805bb23563",
+        "name": "Coffee Mug",
+        "description": "Ceramic mug perfect for your morning coffee. Dishwasher safe with company branding.",
+        "image": "https://images.pexels.com/photos/302894/pexels-photo-302894.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 75,
+        "category": "accessories",
+        "inventory": 50,
+        "rating": 4.8,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:34.063Z",
+        "updatedAt": "2025-07-03T05:21:34.063Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135e74f648805bb23565",
+        "name": "Wireless Earbuds",
+        "description": "High-quality bluetooth earbuds with noise cancellation and long battery life.",
+        "image": "https://images.pexels.com/photos/3587478/pexels-photo-3587478.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 500,
+        "category": "electronics",
+        "inventory": 10,
+        "rating": 4.7,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:34.257Z",
+        "updatedAt": "2025-07-03T05:21:34.257Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135e74f648805bb23567",
+        "name": "Desk Plant",
+        "description": "Small succulent plant for your workspace. Easy to care for and adds life to your desk.",
+        "image": "https://images.pexels.com/photos/1084199/pexels-photo-1084199.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 100,
+        "category": "office",
+        "inventory": 30,
+        "rating": 4.6,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:34.444Z",
+        "updatedAt": "2025-07-03T05:21:34.444Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135e74f648805bb23569",
+        "name": "Amazon Gift Card - $25",
+        "description": "Digital Amazon gift card worth $25. Perfect for online shopping.",
+        "image": "https://images.pexels.com/photos/264787/pexels-photo-264787.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 300,
+        "category": "giftcards",
+        "inventory": 100,
+        "rating": 5,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:34.624Z",
+        "updatedAt": "2025-07-03T05:21:34.624Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135e74f648805bb2356b",
+        "name": "Notebook Set",
+        "description": "Premium notebook and pen set. Perfect for meetings and note-taking.",
+        "image": "https://images.pexels.com/photos/167682/pexels-photo-167682.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 120,
+        "category": "office",
+        "inventory": 40,
+        "rating": 4.4,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:34.801Z",
+        "updatedAt": "2025-07-03T05:21:34.801Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135e74f648805bb2356d",
+        "name": "Wireless Mouse",
+        "description": "Ergonomic wireless mouse with precision tracking and long battery life.",
+        "image": "https://images.pexels.com/photos/2115217/pexels-photo-2115217.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 200,
+        "category": "electronics",
+        "inventory": 20,
+        "rating": 4.3,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:34.981Z",
+        "updatedAt": "2025-07-03T05:21:34.981Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135f74f648805bb2356f",
+        "name": "Water Bottle",
+        "description": "Insulated stainless steel water bottle. Keeps drinks cold for 24 hours.",
+        "image": "https://images.pexels.com/photos/1028637/pexels-photo-1028637.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 125,
+        "category": "accessories",
+        "inventory": 35,
+        "rating": 4.5,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:35.159Z",
+        "updatedAt": "2025-07-03T05:21:35.159Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135f74f648805bb23571",
+        "name": "Bluetooth Speaker",
+        "description": "Portable bluetooth speaker with rich sound quality and waterproof design.",
+        "image": "https://images.pexels.com/photos/1649771/pexels-photo-1649771.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 400,
+        "category": "electronics",
+        "inventory": 15,
+        "rating": 4.6,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:35.341Z",
+        "updatedAt": "2025-07-03T05:21:35.341Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135f74f648805bb23573",
+        "name": "Hoodie",
+        "description": "Comfortable hoodie with company logo. Perfect for casual wear.",
+        "image": "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "pointsCost": 250,
+        "category": "apparel",
+        "inventory": 18,
+        "rating": 4.4,
+        "isActive": true,
+        "createdAt": "2025-07-03T05:21:35.534Z",
+        "updatedAt": "2025-07-03T05:21:35.534Z",
+        "__v": 0
+      }
+    ],
+    "transactions": [
+      {
+        "_id": "6866135f74f648805bb23576",
+        "userId": null,
+        "fromUserId": "6866135a74f648805bb2354d",
+        "toUserId": "6866135c74f648805bb23553",
+        "type": "received",
+        "amount": 14,
+        "description": "Points received from colleague",
+        "message": "Great job on the presentation!",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:35.720Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135f74f648805bb23575",
+        "userId": null,
+        "fromUserId": "6866135a74f648805bb2354d",
+        "toUserId": "6866135c74f648805bb23553",
+        "type": "given",
+        "amount": 14,
+        "description": "Points given to colleague",
+        "message": "Great job on the presentation!",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:35.720Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135f74f648805bb23579",
+        "userId": null,
+        "fromUserId": "6866135974f648805bb23547",
+        "toUserId": "6866135c74f648805bb23553",
+        "type": "given",
+        "amount": 19,
+        "description": "Points given to colleague",
+        "message": "Excellent problem-solving skills",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:35.909Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866135f74f648805bb2357a",
+        "userId": null,
+        "fromUserId": "6866135974f648805bb23547",
+        "toUserId": "6866135c74f648805bb23553",
+        "type": "received",
+        "amount": 19,
+        "description": "Points received from colleague",
+        "message": "Excellent problem-solving skills",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:35.909Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb2357d",
+        "userId": null,
+        "fromUserId": "6866135a74f648805bb2354f",
+        "toUserId": "6866135a74f648805bb2354d",
+        "type": "given",
+        "amount": 14,
+        "description": "Points given to colleague",
+        "message": "Excellent problem-solving skills",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.098Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb2357e",
+        "userId": null,
+        "fromUserId": "6866135a74f648805bb2354f",
+        "toUserId": "6866135a74f648805bb2354d",
+        "type": "received",
+        "amount": 14,
+        "description": "Points received from colleague",
+        "message": "Excellent problem-solving skills",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.098Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb23581",
+        "userId": null,
+        "fromUserId": "6866135a74f648805bb2354f",
+        "toUserId": "6866135974f648805bb23547",
+        "type": "given",
+        "amount": 15,
+        "description": "Points given to colleague",
+        "message": "Excellent problem-solving skills",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.293Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb23582",
+        "userId": null,
+        "fromUserId": "6866135a74f648805bb2354f",
+        "toUserId": "6866135974f648805bb23547",
+        "type": "received",
+        "amount": 15,
+        "description": "Points received from colleague",
+        "message": "Excellent problem-solving skills",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.293Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb23585",
+        "userId": null,
+        "fromUserId": "6866135c74f648805bb23553",
+        "toUserId": "6866135b74f648805bb23551",
+        "type": "given",
+        "amount": 18,
+        "description": "Points given to colleague",
+        "message": "Great job on the presentation!",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.484Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb23586",
+        "userId": null,
+        "fromUserId": "6866135c74f648805bb23553",
+        "toUserId": "6866135b74f648805bb23551",
+        "type": "received",
+        "amount": 18,
+        "description": "Points received from colleague",
+        "message": "Great job on the presentation!",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.484Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb23589",
+        "userId": null,
+        "fromUserId": "6866135974f648805bb23547",
+        "toUserId": "6866135a74f648805bb2354f",
+        "type": "given",
+        "amount": 22,
+        "description": "Points given to colleague",
+        "message": "Outstanding work this week!",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.670Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb2358a",
+        "userId": null,
+        "fromUserId": "6866135974f648805bb23547",
+        "toUserId": "6866135a74f648805bb2354f",
+        "type": "received",
+        "amount": 22,
+        "description": "Points received from colleague",
+        "message": "Outstanding work this week!",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.670Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb2358d",
+        "userId": null,
+        "fromUserId": "6866135a74f648805bb2354d",
+        "toUserId": "6866135b74f648805bb23551",
+        "type": "given",
+        "amount": 23,
+        "description": "Points given to colleague",
+        "message": "Excellent problem-solving skills",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.850Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136074f648805bb2358e",
+        "userId": null,
+        "fromUserId": "6866135a74f648805bb2354d",
+        "toUserId": "6866135b74f648805bb23551",
+        "type": "received",
+        "amount": 23,
+        "description": "Points received from colleague",
+        "message": "Excellent problem-solving skills",
+        "metadata": {
+          "transactionType": "cheer"
+        },
+        "createdAt": "2025-07-03T05:21:36.850Z",
+        "__v": 0
+      }
+    ],
+    "moods": [
+      {
+        "_id": "6866136174f648805bb23591",
+        "userId": "6866135974f648805bb23547",
+        "mood": "okay",
+        "comment": null,
+        "date": "2025-07-02T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:37.028Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136174f648805bb23593",
+        "userId": "6866135974f648805bb23547",
+        "mood": "not-great",
+        "comment": "Everything is going well",
+        "date": "2025-07-01T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:37.214Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136174f648805bb23595",
+        "userId": "6866135974f648805bb23547",
+        "mood": "okay",
+        "comment": null,
+        "date": "2025-06-30T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:37.395Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136174f648805bb23597",
+        "userId": "6866135974f648805bb23547",
+        "mood": "poor",
+        "comment": "Stressed with deadlines",
+        "date": "2025-06-29T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:37.576Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136174f648805bb23599",
+        "userId": "6866135974f648805bb23547",
+        "mood": "okay",
+        "comment": null,
+        "date": "2025-06-28T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:37.752Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136174f648805bb2359b",
+        "userId": "6866135974f648805bb23547",
+        "mood": "not-great",
+        "comment": null,
+        "date": "2025-06-27T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:37.933Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136274f648805bb2359d",
+        "userId": "6866135974f648805bb23547",
+        "mood": "not-great",
+        "comment": "Feeling productive",
+        "date": "2025-06-26T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:38.117Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136274f648805bb2359f",
+        "userId": "6866135a74f648805bb2354d",
+        "mood": "okay",
+        "comment": null,
+        "date": "2025-07-02T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:38.294Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136274f648805bb235a1",
+        "userId": "6866135a74f648805bb2354d",
+        "mood": "good",
+        "comment": "Really enjoying the work",
+        "date": "2025-07-01T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:38.471Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136274f648805bb235a3",
+        "userId": "6866135a74f648805bb2354d",
+        "mood": "not-great",
+        "comment": null,
+        "date": "2025-06-30T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:38.653Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136274f648805bb235a5",
+        "userId": "6866135a74f648805bb2354d",
+        "mood": "good",
+        "comment": null,
+        "date": "2025-06-29T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:38.826Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136274f648805bb235a7",
+        "userId": "6866135a74f648805bb2354d",
+        "mood": "good",
+        "comment": null,
+        "date": "2025-06-28T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:38.999Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136374f648805bb235a9",
+        "userId": "6866135a74f648805bb2354d",
+        "mood": "poor",
+        "comment": null,
+        "date": "2025-06-27T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:39.179Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136374f648805bb235ab",
+        "userId": "6866135a74f648805bb2354d",
+        "mood": "okay",
+        "comment": null,
+        "date": "2025-06-26T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:39.364Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136374f648805bb235ad",
+        "userId": "6866135a74f648805bb2354f",
+        "mood": "poor",
+        "comment": "Really enjoying the work",
+        "date": "2025-07-02T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:39.539Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136374f648805bb235af",
+        "userId": "6866135a74f648805bb2354f",
+        "mood": "not-great",
+        "comment": "Feeling productive",
+        "date": "2025-07-01T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:39.721Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136374f648805bb235b1",
+        "userId": "6866135a74f648805bb2354f",
+        "mood": "excellent",
+        "comment": "Having a great day!",
+        "date": "2025-06-30T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:39.906Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136474f648805bb235b3",
+        "userId": "6866135a74f648805bb2354f",
+        "mood": "excellent",
+        "comment": null,
+        "date": "2025-06-29T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:40.090Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136474f648805bb235b5",
+        "userId": "6866135a74f648805bb2354f",
+        "mood": "excellent",
+        "comment": null,
+        "date": "2025-06-28T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:40.299Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136474f648805bb235b7",
+        "userId": "6866135a74f648805bb2354f",
+        "mood": "okay",
+        "comment": "Feeling productive",
+        "date": "2025-06-27T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:40.486Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136474f648805bb235b9",
+        "userId": "6866135a74f648805bb2354f",
+        "mood": "good",
+        "comment": "Could be better",
+        "date": "2025-06-26T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:40.669Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136474f648805bb235bb",
+        "userId": "6866135b74f648805bb23551",
+        "mood": "excellent",
+        "comment": null,
+        "date": "2025-07-02T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:40.846Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136574f648805bb235bd",
+        "userId": "6866135b74f648805bb23551",
+        "mood": "not-great",
+        "comment": null,
+        "date": "2025-07-01T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:41.024Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136574f648805bb235bf",
+        "userId": "6866135b74f648805bb23551",
+        "mood": "excellent",
+        "comment": "Team collaboration is excellent",
+        "date": "2025-06-30T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:41.210Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136574f648805bb235c1",
+        "userId": "6866135b74f648805bb23551",
+        "mood": "not-great",
+        "comment": "Could be better",
+        "date": "2025-06-29T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:41.388Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136574f648805bb235c3",
+        "userId": "6866135b74f648805bb23551",
+        "mood": "okay",
+        "comment": null,
+        "date": "2025-06-28T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:41.563Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136574f648805bb235c5",
+        "userId": "6866135b74f648805bb23551",
+        "mood": "good",
+        "comment": "Feeling productive",
+        "date": "2025-06-27T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:41.744Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136574f648805bb235c7",
+        "userId": "6866135b74f648805bb23551",
+        "mood": "poor",
+        "comment": null,
+        "date": "2025-06-26T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:41.928Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136674f648805bb235c9",
+        "userId": "6866135c74f648805bb23553",
+        "mood": "good",
+        "comment": null,
+        "date": "2025-07-02T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:42.104Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136674f648805bb235cb",
+        "userId": "6866135c74f648805bb23553",
+        "mood": "excellent",
+        "comment": null,
+        "date": "2025-07-01T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:42.282Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136674f648805bb235cd",
+        "userId": "6866135c74f648805bb23553",
+        "mood": "excellent",
+        "comment": null,
+        "date": "2025-06-30T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:42.460Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136674f648805bb235cf",
+        "userId": "6866135c74f648805bb23553",
+        "mood": "not-great",
+        "comment": "Feeling productive",
+        "date": "2025-06-29T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:42.641Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136674f648805bb235d1",
+        "userId": "6866135c74f648805bb23553",
+        "mood": "poor",
+        "comment": null,
+        "date": "2025-06-28T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:42.821Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235d3",
+        "userId": "6866135c74f648805bb23553",
+        "mood": "excellent",
+        "comment": "Everything is going well",
+        "date": "2025-06-27T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:43.004Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235d5",
+        "userId": "6866135c74f648805bb23553",
+        "mood": "poor",
+        "comment": null,
+        "date": "2025-06-26T16:00:00.000Z",
+        "createdAt": "2025-07-03T05:21:43.181Z",
+        "__v": 0
+      }
+    ],
+    "cheers": [
+      {
+        "_id": "6866136774f648805bb235d8",
+        "fromUser": "6866135874f648805bb23545",
+        "toUser": "6866135b74f648805bb23551",
+        "message": "You're such a team player, always willing to help others.",
+        "points": 5,
+        "createdAt": "2025-06-06T05:21:43.555Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235d9",
+        "fromUser": "6866135974f648805bb23547",
+        "toUser": "6866135b74f648805bb23551",
+        "message": "You always bring such positive energy to the team.",
+        "points": 2,
+        "createdAt": "2025-06-29T05:21:43.555Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235da",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "Great job on the presentation! You really nailed it.",
+        "points": 5,
+        "createdAt": "2025-06-17T05:21:43.555Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235db",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135b74f648805bb23551",
+        "message": "Your positive attitude always brightens my day.",
+        "points": 1,
+        "createdAt": "2025-06-24T05:21:43.555Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235dc",
+        "fromUser": "6866135974f648805bb23547",
+        "toUser": "6866135874f648805bb23545",
+        "message": "Thanks for always being reliable and dependable.",
+        "points": 5,
+        "createdAt": "2025-06-25T05:21:43.555Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235dd",
+        "fromUser": "6866135a74f648805bb2354f",
+        "toUser": "6866135874f648805bb23545",
+        "message": "Thanks for being such a great mentor.",
+        "points": 2,
+        "createdAt": "2025-06-25T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235de",
+        "fromUser": "6866135974f648805bb23547",
+        "toUser": "6866135a74f648805bb2354f",
+        "message": "Your leadership skills are truly outstanding.",
+        "points": 4,
+        "createdAt": "2025-06-06T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235df",
+        "fromUser": "6866135a74f648805bb2354d",
+        "toUser": "6866135b74f648805bb23551",
+        "message": "You handled that difficult situation with grace.",
+        "points": 4,
+        "createdAt": "2025-06-27T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e0",
+        "fromUser": "6866135a74f648805bb2354d",
+        "toUser": "6866135c74f648805bb23553",
+        "message": "Your leadership skills are truly outstanding.",
+        "points": 3,
+        "createdAt": "2025-06-16T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e1",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135c74f648805bb23553",
+        "message": "You always bring such positive energy to the team.",
+        "points": 1,
+        "createdAt": "2025-06-14T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e2",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "Thank you for going above and beyond on this task.",
+        "points": 4,
+        "createdAt": "2025-06-28T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e3",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135c74f648805bb23553",
+        "message": "Your creativity and innovation inspire us all.",
+        "points": 1,
+        "createdAt": "2025-06-28T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e4",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "Your dedication to quality is admirable.",
+        "points": 2,
+        "createdAt": "2025-07-02T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e5",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135a74f648805bb2354f",
+        "message": "Your positive attitude always brightens my day.",
+        "points": 4,
+        "createdAt": "2025-06-26T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e6",
+        "fromUser": "6866135874f648805bb23545",
+        "toUser": "6866135c74f648805bb23553",
+        "message": "You're such a team player, always willing to help others.",
+        "points": 2,
+        "createdAt": "2025-06-20T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e7",
+        "fromUser": "6866135974f648805bb23547",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "Your leadership skills are truly outstanding.",
+        "points": 2,
+        "createdAt": "2025-06-21T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e8",
+        "fromUser": "6866135874f648805bb23545",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "Thanks for helping me with the project. You're awesome!",
+        "points": 5,
+        "createdAt": "2025-06-12T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235e9",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "You always bring such positive energy to the team.",
+        "points": 3,
+        "createdAt": "2025-06-09T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235ea",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "Your leadership skills are truly outstanding.",
+        "points": 5,
+        "createdAt": "2025-06-21T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235eb",
+        "fromUser": "6866135974f648805bb23547",
+        "toUser": "6866135c74f648805bb23553",
+        "message": "Thanks for always being reliable and dependable.",
+        "points": 3,
+        "createdAt": "2025-06-17T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235ec",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135874f648805bb23545",
+        "message": "Your problem-solving skills are incredible.",
+        "points": 3,
+        "createdAt": "2025-06-17T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235ed",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135974f648805bb23547",
+        "message": "Amazing work on the new feature implementation.",
+        "points": 1,
+        "createdAt": "2025-07-03T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235ee",
+        "fromUser": "6866135974f648805bb23547",
+        "toUser": "6866135c74f648805bb23553",
+        "message": "Thanks for always being reliable and dependable.",
+        "points": 2,
+        "createdAt": "2025-06-17T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235ef",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "Thanks for being such a great mentor.",
+        "points": 5,
+        "createdAt": "2025-06-21T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f0",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135c74f648805bb23553",
+        "message": "Your problem-solving skills are incredible.",
+        "points": 3,
+        "createdAt": "2025-06-23T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f1",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135974f648805bb23547",
+        "message": "Your problem-solving skills are incredible.",
+        "points": 4,
+        "createdAt": "2025-07-03T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f2",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135c74f648805bb23553",
+        "message": "Your dedication to quality is admirable.",
+        "points": 2,
+        "createdAt": "2025-06-28T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f3",
+        "fromUser": "6866135974f648805bb23547",
+        "toUser": "6866135c74f648805bb23553",
+        "message": "Thank you for going above and beyond on this task.",
+        "points": 3,
+        "createdAt": "2025-06-29T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f4",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135974f648805bb23547",
+        "message": "Thanks for helping me with the project. You're awesome!",
+        "points": 4,
+        "createdAt": "2025-07-03T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f5",
+        "fromUser": "6866135874f648805bb23545",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "Your dedication to quality is admirable.",
+        "points": 3,
+        "createdAt": "2025-07-02T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f6",
+        "fromUser": "6866135874f648805bb23545",
+        "toUser": "6866135a74f648805bb2354f",
+        "message": "Thank you for going above and beyond on this task.",
+        "points": 1,
+        "createdAt": "2025-06-30T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f7",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135974f648805bb23547",
+        "message": "Thanks for always being reliable and dependable.",
+        "points": 2,
+        "createdAt": "2025-07-03T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f8",
+        "fromUser": "6866135874f648805bb23545",
+        "toUser": "6866135b74f648805bb23551",
+        "message": "You're such a team player, always willing to help others.",
+        "points": 4,
+        "createdAt": "2025-07-01T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235f9",
+        "fromUser": "6866135b74f648805bb23551",
+        "toUser": "6866135874f648805bb23545",
+        "message": "Your dedication to quality is admirable.",
+        "points": 3,
+        "createdAt": "2025-07-03T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235fa",
+        "fromUser": "6866135874f648805bb23545",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "Amazing work on the new feature implementation.",
+        "points": 2,
+        "createdAt": "2025-06-30T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235fb",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135974f648805bb23547",
+        "message": "You're such a team player, always willing to help others.",
+        "points": 1,
+        "createdAt": "2025-06-30T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235fc",
+        "fromUser": "6866135a74f648805bb2354f",
+        "toUser": "6866135a74f648805bb2354d",
+        "message": "You handled that difficult situation with grace.",
+        "points": 4,
+        "createdAt": "2025-07-01T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235fd",
+        "fromUser": "6866135a74f648805bb2354d",
+        "toUser": "6866135a74f648805bb2354f",
+        "message": "You always bring such positive energy to the team.",
+        "points": 4,
+        "createdAt": "2025-06-27T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235fe",
+        "fromUser": "6866135c74f648805bb23553",
+        "toUser": "6866135874f648805bb23545",
+        "message": "Your positive attitude always brightens my day.",
+        "points": 1,
+        "createdAt": "2025-07-02T05:21:43.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6866136774f648805bb235ff",
+        "fromUser": "6866135974f648805bb23547",
+        "toUser": "6866135b74f648805bb23551",
+        "message": "Your dedication to quality is admirable.",
+        "points": 2,
+        "createdAt": "2025-07-02T05:21:43.556Z",
+        "__v": 0
+      }
+    ]
+  },
+  "stats": {
+    "users": 6,
+    "userPoints": 6,
+    "products": 10,
+    "transactions": 14,
+    "moods": 35,
+    "cheers": 40
+  }
+}

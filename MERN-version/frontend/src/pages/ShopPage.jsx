@@ -12,12 +12,21 @@ import {
 } from '@heroicons/react/24/outline';
 
 const ShopPage= () => {
-  const { points, refreshUserData } = useAuth();
+  const { refreshUserData } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [cart, setCart] = useState([]);
+
+  // Fetch user's points data with React Query to enable auto-refresh
+  const { data: points, isLoading: pointsLoading } = useQuery({
+    queryKey: ['points'],
+    queryFn: () => apiClient.getPoints(),
+    staleTime: 30000, // 30 seconds
+    refetchInterval: 60000, // Refetch every minute
+    refetchOnWindowFocus: true,
+  });
 
   // Fetch products
   const { data: products, isLoading: productsLoading } = useQuery({
@@ -44,44 +53,22 @@ const ShopPage= () => {
         }
       }),
     onSuccess: (data) => {
-      // Invalidate all relevant queries to refresh UI
+      // Invalidate all relevant queries to refresh UI across all pages
+      queryClient.invalidateQueries({ queryKey: ['points'] });
       queryClient.invalidateQueries({ queryKey: ['orderHistory'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       
-      // Update points in auth context immediately
-      if (data.newBalance !== undefined) {
-        // Create updated points object
-        const updatedPoints = {
-          ...points,
-          availablePoints: data.newBalance,
-          totalSpent: (points?.totalSpent || 0) + data.receipt.summary.total,
-          lastTransactionAt: new Date().toISOString()
-        };
-        // Update context immediately
-        queryClient.setQueryData(['currentUser'], (oldData) => {
-          if (oldData) {
-            return {
-              ...oldData,
-              points: updatedPoints
-            };
-          }
-          return oldData;
-        });
-      }
-      
-      // Refresh user data to ensure sync
-      refreshUserData();
-      
+      // Clear cart after successful purchase
       setCart([]);
       
-      // Navigate to purchase success page with purchase data
+      // Navigate to success page
       navigate('/purchase-success', { 
-        state: {
-          order: data.order,
+        state: { 
           receipt: data.receipt,
-          newBalance: data.newBalance
-        }
+          newBalance: data.newBalance 
+        } 
       });
     },
     onError: (error) => {
@@ -150,7 +137,7 @@ const ShopPage= () => {
             <div className="flex items-center space-x-2">
               <ChartBarIcon className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-800">
-                {points?.availablePoints || 0} points available
+                {pointsLoading ? 'Loading...' : `${points?.availablePoints || 0} points available`}
               </span>
             </div>
           </div>
