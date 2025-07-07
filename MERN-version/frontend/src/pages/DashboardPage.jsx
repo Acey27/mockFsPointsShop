@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
@@ -14,12 +14,36 @@ import {
 } from '@heroicons/react/24/outline';
 
 const DashboardPage= () => {
-  const { user, points } = useAuth();
+  const { user } = useAuth();
 
-  // Fetch recent transactions
+  // Fetch user's points data with reasonable refresh settings
+  const { data: points, isLoading: pointsLoading } = useQuery({
+    queryKey: ['points'],
+    queryFn: async () => {
+      console.log('🔍 DashboardPage - Fetching fresh points data...');
+      const result = await apiClient.getPoints();
+      console.log('📊 DashboardPage - Fresh points data received:', result);
+      return result;
+    },
+    staleTime: 1 * 60 * 1000, // 1 minute
+    cacheTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 429) return false;
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+
+  // Fetch recent transactions with reasonable refresh settings
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
     queryKey: ['transactions', { limit: 5 }],
     queryFn: () => apiClient.getTransactions({ limit: 5 }),
+    staleTime: 1 * 60 * 1000, // 1 minute
+    cacheTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   // Fetch recent mood entries
@@ -28,13 +52,20 @@ const DashboardPage= () => {
     queryFn: () => apiClient.getMoodHistory({ limit: 3 }),
   });
 
-  if (transactionsLoading || moodsLoading) {
+  if (transactionsLoading || moodsLoading || pointsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="lg" text="Loading dashboard..." />
       </div>
     );
   }
+
+  // Debug logging for DashboardPage
+  console.log('🏠 DashboardPage - Points data:', {
+    monthlyCheerUsed: points?.monthlyCheerUsed,
+    monthlyCheerLimit: points?.monthlyCheerLimit,
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div className="space-y-6">
@@ -95,11 +126,13 @@ const DashboardPage= () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-700">Monthly Limit</p>
+              <p className="text-sm font-medium text-blue-700">Heartbits Used</p>
               <p className="text-2xl font-bold text-blue-900">
                 {points?.monthlyCheerUsed || 0}/{points?.monthlyCheerLimit || 100}
               </p>
-              <p className="text-xs text-blue-600">Cheer points</p>
+              <p className="text-xs text-blue-600">
+                {((points?.monthlyCheerUsed || 0) / (points?.monthlyCheerLimit || 100) * 100).toFixed(0)}% of monthly limit used
+              </p>
             </div>
             <HeartIcon className="w-8 h-8 text-blue-600" />
           </div>
@@ -109,7 +142,7 @@ const DashboardPage= () => {
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Link
-          to="/points"
+          to="/cheer"
           className="bg-blue-600 text-white p-6 rounded-lg hover:bg-blue-700 transition-colors flex flex-col items-center space-y-2 h-20 justify-center"
         >
           <HeartIcon className="w-5 h-5" />

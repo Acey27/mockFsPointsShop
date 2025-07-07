@@ -3,14 +3,14 @@ import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 
-const Layout= () => {
+const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       <Navbar />
       <div className="flex">
         <Sidebar />
         <main className="flex-1 p-6">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>

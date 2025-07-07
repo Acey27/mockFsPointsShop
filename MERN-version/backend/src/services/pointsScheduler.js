@@ -1,11 +1,13 @@
 import cron from 'node-cron';
 import { User, UserPoints, Transaction } from '../models/index.js';
 import { pointsConfig } from '../config/pointsConfig.js';
+import CheerService from './cheerService.js';
 
 class PointsSchedulerService {
   constructor() {
     this.isRunning = false;
     this.task = null;
+    this.cheerResetTask = null;
   }
 
   /**
@@ -32,13 +34,21 @@ class PointsSchedulerService {
       timezone: 'UTC'
     });
 
+    // Add monthly cheer reset task (runs on the 1st of each month at 00:00)
+    this.cheerResetTask = cron.schedule('0 0 1 * *', async () => {
+      await this.resetMonthlyCheerUsage();
+    }, {
+      timezone: 'UTC'
+    });
+
     this.task.start();
+    this.cheerResetTask.start();
     this.isRunning = true;
     
     // Calculate next run description
     const scheduleInfo = this.getScheduleDescription(schedule);
     console.log(`✅ Points scheduler started - distributing ${pointsPerCycle} points ${scheduleInfo}`);
-    */
+    console.log(`✅ Monthly cheer reset scheduler started - resets on 1st of each month at 00:00 UTC`);
   }
 
   /**
@@ -57,15 +67,45 @@ class PointsSchedulerService {
   }
 
   /**
-   * Stop the automatic points distribution scheduler
+   * Stop the scheduler
    */
   stop() {
+    if (!this.isRunning) {
+      console.log('⚠️ Points scheduler is not running');
+      return;
+    }
+
     if (this.task) {
       this.task.stop();
       this.task = null;
     }
+
+    if (this.cheerResetTask) {
+      this.cheerResetTask.stop();
+      this.cheerResetTask = null;
+    }
+
     this.isRunning = false;
     console.log('🛑 Points scheduler stopped');
+  }
+
+  /**
+   * Reset monthly cheer usage for all users
+   */
+  async resetMonthlyCheerUsage() {
+    try {
+      console.log('🔄 Starting monthly cheer usage reset...');
+      
+      const result = await CheerService.resetMonthlyCheerUsage();
+      
+      if (result.success) {
+        console.log('✅ Monthly cheer usage reset completed successfully');
+      } else {
+        console.error('❌ Monthly cheer usage reset failed:', result.message);
+      }
+    } catch (error) {
+      console.error('❌ Error during monthly cheer usage reset:', error);
+    }
   }
 
   /**

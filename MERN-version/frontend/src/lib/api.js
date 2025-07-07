@@ -151,6 +151,11 @@ class ApiClient {
     return response.data.data;
   }
 
+  async getPoints() {
+    const response = await this.client.get('/api/points');
+    return response.data;
+  }
+
   async getTransactions(params) {
     const response = await this.client.get('/api/points/transactions', { params });
     return response.data;
@@ -162,13 +167,18 @@ class ApiClient {
   }
 
   async cheerUser(data) {
-    const response = await this.client.post('/api/points/cheer', data);
+    const response = await this.client.post('/api/cheer', data);
     return response.data.data;
   }
 
-  async getLeaderboard(params) {
-    const response = await this.client.get('/api/points/leaderboard', { params });
-    return response.data.data;
+  async getLeaderboard(period = 'weekly') {
+    const response = await this.client.get('/api/cheer/leaderboards', { params: { period } });
+    return response.data;
+  }
+
+  // Legacy method for backward compatibility
+  async getLeaderboards(period = 'weekly') {
+    return this.getLeaderboard(period);
   }
 
   // Shop endpoints
@@ -394,6 +404,111 @@ class ApiClient {
   async triggerManualDistribution() {
     const response = await this.client.post('/api/admin/scheduler/distribute');
     return response.data.data;
+  }
+
+  // === CHEER API METHODS ===
+
+  /**
+   * Get cheer statistics for current user
+   * @returns {Promise<Object>} Cheer statistics
+   */
+  async getCheerStats() {
+    const response = await this.client.get('/api/cheer/stats');
+    return response.data;
+  }
+
+  /**
+   * Get cheers received by current user
+   * @param {Object} params - Query parameters
+   * @returns {Promise<Object>} Received cheers
+   */
+  async getReceivedCheers(params = {}) {
+    const response = await this.client.get('/api/cheer/received', { params });
+    return response.data;
+  }
+
+  /**
+   * Get recent cheers (all users)
+   * @param {Object} params - Query parameters
+   * @returns {Promise<Object>} Recent cheers
+   */
+  async getRecentCheers(params = {}) {
+    const response = await this.client.get('/api/cheer/recent', { params });
+    return response.data;
+  }
+
+  /**
+   * Create a new cheer
+   * @param {Object} cheerData - Cheer data
+   * @returns {Promise<Object>} Created cheer
+   */
+  async createCheer(cheerData) {
+    const response = await this.client.post('/api/points/cheer', cheerData);
+    return response.data;
+  }
+
+  /**
+   * Get leaderboards
+   * @param {string} period - Period (weekly, monthly, alltime)
+   * @returns {Promise<Object>} Leaderboard data
+   */
+  async getLeaderboards(period = 'weekly') {
+    const response = await this.client.get('/api/cheer/leaderboards', { 
+      params: { period } 
+    });
+    return response.data;
+  }
+
+  /**
+   * Search users for cheering
+   * @param {Object} params - Search parameters
+   * @returns {Promise<Object>} Search results
+   */
+  async searchUsers(params = {}) {
+    const response = await this.client.get('/api/cheer/search-users', { params });
+    return response.data;
+  }
+
+  /**
+   * Add a comment to a cheer
+   * @param {string} cheerID - The cheer ID
+   * @param {string} comment - The comment text
+   * @returns {Promise<Object>} Created comment
+   */
+  async addComment(cheerID, comment) {
+    const response = await this.client.post(`/api/cheer/${cheerID}/comments`, { comment });
+    return response.data;
+  }
+
+  /**
+   * Get comments for a cheer
+   * @param {string} cheerID - The cheer ID
+   * @param {Object} params - Query parameters (page, limit)
+   * @returns {Promise<Object>} Comments data
+   */
+  async getComments(cheerID, params = {}) {
+    const response = await this.client.get(`/api/cheer/${cheerID}/comments`, { params });
+    return response.data;
+  }
+
+  /**
+   * Get comment counts for multiple cheers
+   * @param {string[]} cheerIDs - Array of cheer IDs
+   * @returns {Promise<Object>} Comment counts object
+   */
+  async getCommentCounts(cheerIDs) {
+    const response = await this.client.post('/api/cheer/comments/counts', { cheerIDs });
+    return response.data;
+  }
+
+  /**
+   * Delete a comment
+   * @param {string} commentID - The comment ID
+   * @returns {Promise<Object>} Deletion result
+   */
+  async deleteComment(commentID) {
+    const response = await this.client.delete(`/api/cheer/comments/${commentID}`);
+    return response.data;
   }
 }
 

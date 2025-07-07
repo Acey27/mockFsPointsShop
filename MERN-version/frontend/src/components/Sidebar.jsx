@@ -9,7 +9,8 @@ import {
   UserIcon,
   CogIcon,
   DocumentTextIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  HeartIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Points', href: '/points', icon: ChartBarIcon },
   { name: 'Shop', href: '/shop', icon: GiftIcon },
   { name: 'Order History', href: '/orders', icon: DocumentTextIcon },
+  { name: 'Cheer a Peer', href: '/cheer', icon: HeartIcon },
   { name: 'Mood', href: '/mood', icon: FaceSmileIcon },
   { name: 'Profile', href: '/profile', icon: UserIcon },
   { name: 'Admin', href: '/admin', icon: CogIcon, adminOnly: true },

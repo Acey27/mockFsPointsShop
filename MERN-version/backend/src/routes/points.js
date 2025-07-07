@@ -2,34 +2,44 @@ import { Router } from 'express';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { User, UserPoints, Transaction } from '../models/index.js';
 import { validateObjectId } from '../utils/validation.js';
+import CheerService from '../services/cheerService.js';
 
 const router = Router();
 
 // Get current user's points
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const userPoints = await UserPoints.findOne({ userId: req.user._id });
+    // Get comprehensive cheer stats using the unified service
+    const cheerStats = await CheerService.getUserCheerStats(req.user._id);
     
-    if (!userPoints) {
-      // Create points record if it doesn't exist
-      const newUserPoints = await UserPoints.createForUser(req.user._id);
+    if (!cheerStats.success) {
+      // Fallback to basic points if cheer stats fail
+      const userPoints = await UserPoints.findOne({ userId: req.user._id });
+      
+      if (!userPoints) {
+        const newUserPoints = await UserPoints.createForUser(req.user._id);
+        return res.json({
+          availablePoints: newUserPoints.availablePoints,
+          totalEarned: newUserPoints.totalEarned,
+          totalSpent: newUserPoints.totalSpent,
+          monthlyCheerLimit: newUserPoints.monthlyCheerLimit,
+          monthlyCheerUsed: newUserPoints.monthlyCheerUsed
+        });
+      }
+
       return res.json({
-        availablePoints: newUserPoints.availablePoints,
-        totalEarned: newUserPoints.totalEarned,
-        totalSpent: newUserPoints.totalSpent,
-        monthlyCheerLimit: newUserPoints.monthlyCheerLimit,
-        monthlyCheerUsed: newUserPoints.monthlyCheerUsed
+        availablePoints: userPoints.availablePoints,
+        totalEarned: userPoints.totalEarned,
+        totalSpent: userPoints.totalSpent,
+        monthlyCheerLimit: userPoints.monthlyCheerLimit,
+        monthlyCheerUsed: userPoints.monthlyCheerUsed
       });
     }
 
-    return res.json({
-      availablePoints: userPoints.availablePoints,
-      totalEarned: userPoints.totalEarned,
-      totalSpent: userPoints.totalSpent,
-      monthlyCheerLimit: userPoints.monthlyCheerLimit,
-      monthlyCheerUsed: userPoints.monthlyCheerUsed
-    });
+    // Return the comprehensive stats from CheerService
+    return res.json(cheerStats.data);
   } catch (error) {
+    console.error('Points endpoint error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 });
@@ -117,6 +127,7 @@ router.get('/history', requireAuth, async (req, res) => {
 });
 
 // Get points history (transactions) - alias for frontend compatibility
+// Modified to only show cheer-related transactions (heartbits given/received)
 router.get('/transactions', requireAuth, async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
@@ -152,12 +163,12 @@ router.get('/transactions', requireAuth, async (req, res) => {
     if (type === 'earned') {
       query = {
         ...baseQuery,
-        type: { $in: ['earned', 'received', 'bonus', 'refund', 'admin_grant'] }
+        type: { $in: ['earned', 'received'] }
       };
     } else if (type === 'spent') {
       query = {
         ...baseQuery,
-        type: { $in: ['spent', 'given', 'purchase', 'admin_deduct'] }
+        type: { $in: ['spent', 'given'] }
       };
     }
 
@@ -218,125 +229,22 @@ router.post('/cheer', requireAuth, async (req, res) => {
     }
 
     const pointsToSend = amount || 10; // Default to 10 points
-    if (pointsToSend <= 0 || pointsToSend > 100) {
-      return res.status(400).json({ 
+
+    // Use the unified CheerService to process the cheer
+    const result = await CheerService.processCheer(fromUserId, toUserId, pointsToSend, message);
+
+    if (!result.success) {
+      return res.status(400).json({
         status: 'error',
-        message: 'Amount must be between 1 and 100 points' 
+        message: result.message
       });
     }
 
-    if (fromUserId.toString() === toUserId) {
-      return res.status(400).json({ 
-        status: 'error',
-        message: 'Cannot send points to yourself' 
-      });
-    }
-
-    // Check if recipient exists
-    const recipient = await User.findById(toUserId);
-    if (!recipient || !recipient.isActive) {
-      return res.status(404).json({ 
-        status: 'error',
-        message: 'Recipient not found or inactive' 
-      });
-    }
-
-    // Get sender's points
-    const senderPoints = await UserPoints.findOne({ userId: fromUserId });
-    if (!senderPoints) {
-      return res.status(400).json({ 
-        status: 'error',
-        message: 'Sender points record not found' 
-      });
-    }
-
-    // Check monthly cheer limit
-    const currentMonth = new Date();
-    const lastReset = senderPoints.lastMonthlyReset;
-    const isNewMonth = !lastReset || 
-      lastReset.getMonth() !== currentMonth.getMonth() || 
-      lastReset.getFullYear() !== currentMonth.getFullYear();
-
-    if (isNewMonth) {
-      senderPoints.monthlyCheerUsed = 0;
-      senderPoints.lastMonthlyReset = currentMonth;
-    }
-
-    if (senderPoints.monthlyCheerUsed + pointsToSend > senderPoints.monthlyCheerLimit) {
-      const remaining = senderPoints.monthlyCheerLimit - senderPoints.monthlyCheerUsed;
-      return res.status(400).json({ 
-        status: 'error',
-        message: `Monthly cheer limit exceeded. You can send ${remaining} more points this month.` 
-      });
-    }
-
-    // Get or create recipient's points
-    let recipientPoints = await UserPoints.findOne({ userId: toUserId });
-    if (!recipientPoints) {
-      recipientPoints = await UserPoints.createForUser(toUserId);
-    }
-
-    // Start transaction
-    const session = await UserPoints.startSession();
-    session.startTransaction();
-
-    try {
-      // Update sender's points
-      senderPoints.monthlyCheerUsed += pointsToSend;
-      await senderPoints.save({ session });
-
-      // Update recipient's points
-      if (recipientPoints) {
-        recipientPoints.availablePoints += pointsToSend;
-        recipientPoints.totalEarned += pointsToSend;
-        await recipientPoints.save({ session });
-      }
-
-      // Create transaction records
-      const senderTransaction = new Transaction({
-        fromUserId: fromUserId,
-        toUserId: toUserId,
-        type: 'given',
-        amount: pointsToSend,
-        description: `Cheered ${recipient.name}`,
-        message: message || '',
-        metadata: {
-          recipientId: toUserId,
-          recipientName: recipient.name,
-          type: 'cheer'
-        }
-      });
-
-      const recipientTransaction = new Transaction({
-        fromUserId: fromUserId,
-        toUserId: toUserId,
-        type: 'received',
-        amount: pointsToSend,
-        description: `Received cheer from ${req.user.name}`,
-        message: message || '',
-        metadata: {
-          senderId: fromUserId,
-          senderName: req.user.name,
-          type: 'cheer'
-        }
-      });
-
-      await senderTransaction.save({ session });
-      await recipientTransaction.save({ session });
-
-      await session.commitTransaction();
-
-      return res.json({
-        status: 'success',
-        message: `Successfully cheered ${recipient.name} with ${pointsToSend} points!`,
-        data: [senderTransaction, recipientTransaction]
-      });
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
+    return res.json({
+      status: 'success',
+      message: result.message,
+      data: result.data.transactions
+    });
   } catch (error) {
     console.error('Cheer error:', error);
     return res.status(500).json({ 
@@ -645,6 +553,124 @@ router.post('/admin/reset-monthly', requireAdmin, async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get detailed cheer statistics
+router.get('/cheer-stats', requireAuth, async (req, res) => {
+  try {
+    const cheerStats = await CheerService.getUserCheerStats(req.user._id);
+    
+    if (!cheerStats.success) {
+      return res.status(500).json({
+        status: 'error',
+        message: cheerStats.message
+      });
+    }
+
+    return res.json({
+      status: 'success',
+      data: cheerStats.data
+    });
+  } catch (error) {
+    console.error('Cheer stats error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Server error' 
+    });
+  }
+});
+
+// Get cheer history/transactions
+router.get('/cheer-history', requireAuth, async (req, res) => {
+  try {
+    const { limit = 20, page = 1, type } = req.query;
+    const skip = (page - 1) * limit;
+
+    const history = await CheerService.getUserCheerHistory(req.user._id, {
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      type
+    });
+
+    if (!history.success) {
+      return res.status(500).json({
+        status: 'error',
+        message: history.message
+      });
+    }
+
+    return res.json({
+      status: 'success',
+      data: history.data,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: history.pagination.total
+      }
+    });
+  } catch (error) {
+    console.error('Cheer history error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Server error' 
+    });
+  }
+});
+
+// Get cheer leaderboard
+router.get('/cheer-leaderboard', requireAuth, async (req, res) => {
+  try {
+    const { period = 'monthly', limit = 10 } = req.query;
+
+    const leaderboard = await CheerService.getCheerLeaderboard(period, parseInt(limit));
+
+    if (!leaderboard.success) {
+      return res.status(500).json({
+        status: 'error',
+        message: leaderboard.message
+      });
+    }
+
+    return res.json({
+      status: 'success',
+      data: leaderboard.data,
+      period: leaderboard.period
+    });
+  } catch (error) {
+    console.error('Cheer leaderboard error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Server error' 
+    });
+  }
+});
+
+// Validate cheer request (for UI to check limits before sending)
+router.post('/cheer-validate', requireAuth, async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const pointsToSend = amount || 10;
+
+    const validation = await CheerService.validateCheerRequest(req.user._id, pointsToSend);
+
+    if (!validation.success) {
+      return res.status(400).json({
+        status: 'error',
+        message: validation.message
+      });
+    }
+
+    return res.json({
+      status: 'success',
+      data: validation.data
+    });
+  } catch (error) {
+    console.error('Cheer validation error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Server error' 
+    });
   }
 });
 
