@@ -194,7 +194,7 @@ router.patch('/cart/update', requireAuth, async (req, res) => {
       });
     }
 
-    let cart = await Cart.findOne({ userId });
+    const cart = await Cart.findOne({ userId });
     if (!cart) {
       return res.status(404).json({ 
         status: 'error',
@@ -234,7 +234,7 @@ router.delete('/cart/remove/:productId', requireAuth, async (req, res) => {
       });
     }
 
-    let cart = await Cart.findOne({ userId });
+    const cart = await Cart.findOne({ userId });
     if (!cart) {
       return res.status(404).json({ 
         status: 'error',
@@ -266,7 +266,7 @@ router.delete('/cart/clear', requireAuth, async (req, res) => {
   try {
     const userId = req.user._id;
     
-    let cart = await Cart.findOne({ userId });
+    const cart = await Cart.findOne({ userId });
     if (!cart) {
       return res.json({
         status: 'success',
@@ -525,7 +525,7 @@ router.get('/orders/history', requireAuth, async (req, res) => {
         total = countResult[0]?.total || 0;
         
         // Process aggregated results
-        for (let order of orders) {
+        for (const order of orders) {
           if (order.items && order.productData) {
             order.items = order.items.map(item => {
               const productData = order.productData.find(p => p._id.toString() === item.productId.toString());

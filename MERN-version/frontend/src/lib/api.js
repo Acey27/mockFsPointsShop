@@ -396,27 +396,6 @@ class ApiClient {
     return response.data.data;
   }
 
-  // Points Scheduler Management
-  async getSchedulerStatus() {
-    const response = await this.client.get('/api/admin/scheduler/status');
-    return response.data.data;
-  }
-
-  async startScheduler() {
-    const response = await this.client.post('/api/admin/scheduler/start');
-    return response.data.data;
-  }
-
-  async stopScheduler() {
-    const response = await this.client.post('/api/admin/scheduler/stop');
-    return response.data.data;
-  }
-
-  async triggerManualDistribution() {
-    const response = await this.client.post('/api/admin/scheduler/distribute');
-    return response.data.data;
-  }
-
   // === CHEER API METHODS ===
 
   /**

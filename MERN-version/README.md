@@ -40,17 +40,16 @@ A full-stack points-based employee recognition and rewards system built with the
 
 ```
 MERN-version/
-├── frontend/                 # React + TypeScript + Vite
+├── frontend/                 # React + JavaScript + Vite
 │   ├── src/
 │   │   ├── components/      # Reusable UI components
 │   │   ├── pages/          # Page components
 │   │   ├── contexts/       # React contexts (Auth, etc.)
 │   │   ├── hooks/          # Custom React hooks
 │   │   ├── lib/            # API client and utilities
-│   │   ├── types/          # TypeScript type definitions
-│   │   └── styles/         # Global styles and Tailwind config
+│   │   └── index.css       # Global styles and Tailwind config
 │   └── package.json
-├── backend/                  # Express + MongoDB + TypeScript
+├── backend/                  # Express + MongoDB + JavaScript
 │   ├── src/
 │   │   ├── models/         # Mongoose models
 │   │   ├── routes/         # API route handlers
@@ -58,8 +57,12 @@ MERN-version/
 │   │   ├── services/       # Business logic
 │   │   ├── utils/          # Helper functions
 │   │   ├── config/         # Configuration files
-│   │   └── server.ts       # Express server entry point
+│   │   └── server.js       # Express server entry point
 │   └── package.json
+├── docker-compose.yml        # MongoDB and Mongo Express containers
+├── package.json             # Root package with scripts
+└── README.md               # This file
+```
 ├── docker-compose.yml        # MongoDB and Mongo Express containers
 ├── package.json             # Root package with scripts
 └── README.md               # This file

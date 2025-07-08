@@ -1,10 +1,9 @@
-import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { useGlobalAutoRefresh } from './hooks/useUnifiedAutoRefresh';
 
-// Page components (we'll create these)
+// Page components
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';

@@ -290,12 +290,13 @@ router.get('/leaderboards', requireAuth, async (req, res) => {
     let startDate;
 
     switch (period) {
-      case 'weekly':
+      case 'weekly': {
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
         startOfWeek.setHours(0, 0, 0, 0);
         startDate = startOfWeek;
         break;
+      }
       case 'monthly':
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
@@ -396,7 +397,7 @@ router.get('/search-users', requireAuth, async (req, res) => {
     const { query = '', department = '' } = req.query;
     const currentUserId = req.userId;
 
-    let searchQuery = {
+    const searchQuery = {
       _id: { $ne: currentUserId } // Exclude current user
     };
 

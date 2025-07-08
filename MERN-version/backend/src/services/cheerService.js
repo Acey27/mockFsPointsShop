@@ -1,5 +1,4 @@
 import { User, UserPoints, Transaction } from '../models/index.js';
-import mongoose from 'mongoose';
 
 /**
  * Unified Cheer Service
@@ -148,12 +147,13 @@ class CheerService {
       let startDate;
 
       switch (period) {
-        case 'weekly':
+        case 'weekly': {
           const startOfWeek = new Date(now);
           startOfWeek.setDate(now.getDate() - now.getDay());
           startOfWeek.setHours(0, 0, 0, 0);
           startDate = startOfWeek;
           break;
+        }
         case 'monthly':
           startDate = new Date(now.getFullYear(), now.getMonth(), 1);
           break;

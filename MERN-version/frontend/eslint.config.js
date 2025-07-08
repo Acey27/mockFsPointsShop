@@ -16,6 +16,8 @@ export default [
         fetch: 'readonly',
         Blob: 'readonly',
         CustomEvent: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
         
         // Node globals
         process: 'readonly',
