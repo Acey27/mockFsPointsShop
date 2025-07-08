@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { 
@@ -9,7 +9,7 @@ import {
   UserIcon,
   CogIcon,
   DocumentTextIcon,
-  ClipboardDocumentListIcon
+  HeartIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -26,10 +26,10 @@ const navigation = [
   { name: 'Points', href: '/points', icon: ChartBarIcon },
   { name: 'Shop', href: '/shop', icon: GiftIcon },
   { name: 'Order History', href: '/orders', icon: DocumentTextIcon },
+  { name: 'Cheer a Peer', href: '/cheer', icon: HeartIcon },
   { name: 'Mood', href: '/mood', icon: FaceSmileIcon },
   { name: 'Profile', href: '/profile', icon: UserIcon },
   { name: 'Admin', href: '/admin', icon: CogIcon, adminOnly: true },
-  { name: 'Purchase Logs', href: '/admin/purchase-logs', icon: ClipboardDocumentListIcon, adminOnly: true },
 ];
 
 const Sidebar= () => {

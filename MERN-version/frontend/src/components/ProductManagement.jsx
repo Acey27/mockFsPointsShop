@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
+import { useEventDrivenRefresh } from '../hooks/useUnifiedAutoRefresh';
 // Types are now documented as JSDoc in ../types/index.js
 import ProductForm from './ProductForm';
 import DeleteConfirmation from './DeleteConfirmation';
@@ -10,7 +11,6 @@ import {
   PencilIcon,
   TrashIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   CubeIcon
 } from '@heroicons/react/24/outline';
 
@@ -42,6 +42,7 @@ const ProductManagement= ({ className = '' }) => {
   const [viewMode, setViewMode] = useState('grid');
 
   const queryClient = useQueryClient();
+  const { triggerProductManagementRefresh } = useEventDrivenRefresh();
 
   // Fetch products
   const { data: productsData, isLoading: productsLoading, error } = useQuery({
@@ -60,7 +61,7 @@ const ProductManagement= ({ className = '' }) => {
   const createProductMutation = useMutation({
     mutationFn: (data) => apiClient.createProduct(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      triggerProductManagementRefresh();
       setIsFormOpen(false);
       setSelectedProduct(null);
     },
@@ -74,7 +75,7 @@ const ProductManagement= ({ className = '' }) => {
     mutationFn: ({ id, data }) => 
       apiClient.updateProduct(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      triggerProductManagementRefresh();
       setIsFormOpen(false);
       setSelectedProduct(null);
     },
@@ -87,7 +88,7 @@ const ProductManagement= ({ className = '' }) => {
   const deleteProductMutation = useMutation({
     mutationFn: (id) => apiClient.deleteProduct(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      triggerProductManagementRefresh();
       setIsDeleteOpen(false);
       setSelectedProduct(null);
     },
@@ -183,11 +184,10 @@ const ProductManagement= ({ className = '' }) => {
 
       {/* Filters and Search */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
-        <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
-          {/* Search */}
+        <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
-              <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search products..."
@@ -197,14 +197,11 @@ const ProductManagement= ({ className = '' }) => {
               />
             </div>
           </div>
-
-          {/* Category Filter */}
-          <div className="flex items-center space-x-2">
-            <FunnelIcon className="w-4 h-4 text-gray-400" />
+          <div>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {PRODUCT_CATEGORIES.map(cat => (
                 <option key={cat.value} value={cat.value}>
@@ -213,21 +210,17 @@ const ProductManagement= ({ className = '' }) => {
               ))}
             </select>
           </div>
-
-          {/* Status Filter */}
           <div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
           </div>
-
-          {/* View Mode Toggle */}
           <div className="flex border border-gray-300 rounded-md">
             <button
               onClick={() => setViewMode('grid')}

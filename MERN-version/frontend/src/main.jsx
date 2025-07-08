@@ -10,14 +10,19 @@ import './index.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 0, // Data is always considered stale to enable auto-refresh
+      gcTime: 30000, // Keep data in cache for 30 seconds
+      // Disable automatic refetching - we use event-driven refresh system instead
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: 'always', // Allow refetching on mount for invalidated queries
       retry: (failureCount, error) => {
         // Don't retry on 4xx errors
         if (error?.response?.status >= 400 && error?.response?.status < 500) {
           return false;
         }
-        // Retry up to 3 times for other errors
-        return failureCount < 3;
+        // Retry up to 2 times for other errors (reduced from 3)
+        return failureCount < 2;
       },
     },
     mutations: {

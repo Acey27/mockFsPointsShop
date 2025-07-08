@@ -1,9 +1,9 @@
-import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
+import { useGlobalAutoRefresh } from './hooks/useUnifiedAutoRefresh';
 
-// Page components (we'll create these)
+// Page components
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -14,7 +14,7 @@ import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import PurchaseSuccessPage from './pages/PurchaseSuccessPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
-import AdminPurchaseLogsPage from './pages/AdminPurchaseLogsPage';
+import CheerPage from './pages/CheerPage';
 
 // Layout components
 import Layout from './components/Layout';
@@ -54,8 +54,11 @@ const PublicRoute = ({ children }) => {
   return <>{children}</>;
 };
 
-// Main App component
+// Main App component with event-driven refresh
 const AppRoutes = () => {
+  // Enable event-driven auto-refresh for the entire application
+  useGlobalAutoRefresh();
+  
   return (
     <Routes>
       {/* Public routes */}
@@ -90,6 +93,7 @@ const AppRoutes = () => {
         <Route path="points" element={<PointsPage />} />
         <Route path="shop" element={<ShopPage />} />
         <Route path="mood" element={<MoodPage />} />
+        <Route path="cheer" element={<CheerPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="purchase-success" element={<PurchaseSuccessPage />} />
         <Route path="orders" element={<OrderHistoryPage />} />
@@ -100,14 +104,6 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute adminOnly>
               <AdminPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="admin/purchase-logs" 
-          element={
-            <ProtectedRoute adminOnly>
-              <AdminPurchaseLogsPage />
             </ProtectedRoute>
           } 
         />

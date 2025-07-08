@@ -10,7 +10,6 @@ import { config } from './config/index.js';
 import { database } from './config/database.js';
 import { globalErrorHandler, notFoundHandler, rateLimitHandler } from './middleware/errorHandler.js';
 import { optionalDatabase } from './middleware/auth.js';
-import { pointsScheduler } from './services/pointsScheduler.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -19,6 +18,7 @@ import pointsRoutes from './routes/points.js';
 import shopRoutes from './routes/shop.js';
 import moodRoutes from './routes/mood.js';
 import adminRoutes from './routes/admin.js';
+import cheerRoutes from './routes/cheer.js';
 
 const app = express();
 
@@ -73,7 +73,31 @@ const limiter = rateLimit({
   legacyHeaders: false,
   skip: (req) => {
     // Skip rate limiting for health checks and certain endpoints
-    return req.path === '/health' || req.path === '/api/health';
+    if (req.path === '/health' || req.path === '/api/health') {
+      return true;
+    }
+    // Skip rate limiting entirely in development
+    if (config.NODE_ENV === 'development') {
+      return true;
+    }
+    return false;
+  }
+});
+
+// More lenient rate limiting for auth endpoints in development
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: config.NODE_ENV === 'development' ? 5000 : 10, // 5000 in dev, 10 in production
+  message: rateLimitHandler,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful requests
+  skip: (req) => {
+    // Skip rate limiting for development environment entirely
+    if (config.NODE_ENV === 'development') {
+      return true;
+    }
+    return false;
   }
 });
 
@@ -132,6 +156,7 @@ app.get('/api/health', optionalDatabase, async (req, res) => {
       pointsSystem: true,
       shop: true,
       moodTracking: true,
+      cheerPeer: true,
       adminPanel: true
     }
   };
@@ -210,12 +235,13 @@ app.get('/api/demo/products', (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/points', pointsRoutes);
 app.use('/api/shop', shopRoutes);
 app.use('/api/mood', moodRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/cheer', cheerRoutes);
 
 // API documentation (if enabled)
 if (config.ENABLE_SWAGGER) {
@@ -230,6 +256,7 @@ if (config.ENABLE_SWAGGER) {
         points: '/api/points',
         shop: '/api/shop',
         mood: '/api/mood',
+        cheer: '/api/cheer',
         admin: '/api/admin'
       }
     });
@@ -256,19 +283,11 @@ const startServer = async () => {
       console.log(`📚 API documentation: http://localhost:${PORT}/api-docs`);
       console.log(`🏥 Health check: http://localhost:${PORT}/health`);
       console.log(`🌍 Environment: ${config.NODE_ENV}`);
-      
-      // Start the automatic points scheduler after server is ready
-      console.log('⏰ Starting automatic points scheduler...');
-      pointsScheduler.start();
     });
 
     // Graceful shutdown
     const gracefulShutdown = async (signal) => {
       console.log(`\n🔄 Received ${signal}, shutting down gracefully...`);
-      
-      // Stop the points scheduler first
-      console.log('⏹️ Stopping points scheduler...');
-      pointsScheduler.stop();
       
       server.close(async () => {
         console.log('📡 HTTP server closed');

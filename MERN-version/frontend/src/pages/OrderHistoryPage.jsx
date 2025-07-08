@@ -1,36 +1,95 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { apiClient } from '../lib/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useEventDrivenRefresh } from '../hooks/useUnifiedAutoRefresh';
 import {
   DocumentTextIcon,
   ShoppingBagIcon,
   CalendarIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
-  ChevronDownIcon,
-  EyeIcon
+  EyeIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 
 const OrderHistoryPage= () => {
   const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const { triggerOrderCancelRefresh } = useEventDrivenRefresh();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const { data: orderHistory, isLoading, error } = useQuery({
-    queryKey: ['orderHistory', page, statusFilter, user?._id], // Include user ID for proper caching
+  // Debounce search term
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [statusFilter, debouncedSearchTerm]);
+
+  // Auto-refresh is now handled globally
+
+  const { data: orderHistory, isLoading, error, refetch } = useQuery({
+    queryKey: ['orderHistory', page, statusFilter, debouncedSearchTerm, user?._id], // Include user ID for proper caching
     queryFn: () => {
       console.log('Fetching order history for user:', user?._id); // Debug log
       return apiClient.getOrderHistory({ 
         page, 
         limit: 10,
-        ...(statusFilter !== 'all' && { status: statusFilter })
+        ...(statusFilter !== 'all' && { status: statusFilter }),
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       });
     },
     enabled: !!isAuthenticated && !!user, // Only run when authenticated
+    staleTime: 0, // Always consider data stale to ensure fresh data
+    refetchOnMount: true, // Always refetch when component mounts
+  });
+
+  // Listen for purchase events to ensure fresh data
+  React.useEffect(() => {
+    const handlePurchaseRefresh = () => {
+      console.log('🛍️ Purchase detected, refreshing order history...');
+      refetch();
+    };
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'data-updated') {
+        console.log('📡 Data updated in another tab, refreshing order history...');
+        refetch();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [refetch]);
+
+  // Cancel order mutation
+  const cancelOrderMutation = useMutation({
+    mutationFn: (orderId) => apiClient.cancelOrder(orderId),
+    onSuccess: () => {
+      // Trigger event-driven refresh after cancellation
+      triggerOrderCancelRefresh();
+      alert('Order cancelled successfully!');
+    },
+    onError: (error) => {
+      alert(error.message || 'Failed to cancel order');
+    }
   });
 
   // Debug log
@@ -55,12 +114,8 @@ const OrderHistoryPage= () => {
   const orders = orderHistory?.data || [];
   const pagination = orderHistory?.pagination;
 
-  const filteredOrders = orders.filter((order) =>
-    order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.items.some((item) => 
-      item.productId.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  // Remove frontend filtering - backend now handles search
+  const filteredOrders = orders;
 
   return (
     <div className="space-y-6">
@@ -78,38 +133,31 @@ const OrderHistoryPage= () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+        <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search orders or products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
-
-          {/* Status Filter */}
-          <div className="sm:w-48">
-            <div className="relative">
-              <FunnelIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="pl-10 pr-8 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-              >
-                <option value="all">All Status</option>
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            </div>
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
           </div>
         </div>
       </div>
@@ -136,7 +184,7 @@ const OrderHistoryPage= () => {
       )}
 
       {/* Pagination */}
-      {pagination && pagination.pages > 1 && (
+      {pagination && pagination.totalPages > 1 && (
         <div className="flex justify-center space-x-2">
           <button
             onClick={() => setPage(page - 1)}
@@ -146,11 +194,11 @@ const OrderHistoryPage= () => {
             Previous
           </button>
           <span className="px-4 py-2 text-sm text-gray-700">
-            Page {page} of {pagination.pages}
+            Page {page} of {pagination.totalPages}
           </span>
           <button
             onClick={() => setPage(page + 1)}
-            disabled={page >= pagination.pages}
+            disabled={page >= pagination.totalPages}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
@@ -170,12 +218,78 @@ const OrderHistoryPage= () => {
 };
 
 const OrderCard = ({ order, onViewDetails }) => {
-  const getStatusColor = (status) => {
+  const queryClient = useQueryClient();
+  const { triggerOrderCancelRefresh } = useEventDrivenRefresh();
+  
+  const getStatusColor = (status, order) => {
+    // Check if there's a pending cancellation request
+    if (order.cancellationRequest?.requested && order.cancellationRequest?.adminResponse === 'pending') {
+      return 'bg-orange-100 text-orange-800';
+    }
+    
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status, order) => {
+    // Check if there's a pending cancellation request
+    if (order.cancellationRequest?.requested && order.cancellationRequest?.adminResponse === 'pending') {
+      return <ExclamationCircleIcon className="h-4 w-4" />;
+    }
+    
+    switch (status) {
+      case 'completed': return <CheckCircleIcon className="h-4 w-4" />;
+      case 'pending': return <ClockIcon className="h-4 w-4" />;
+      case 'cancelled': return <ExclamationCircleIcon className="h-4 w-4" />;
+      default: return <ClockIcon className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusText = (status, order) => {
+    // Check if there's a pending cancellation request
+    if (order.cancellationRequest?.requested && order.cancellationRequest?.adminResponse === 'pending') {
+      return 'Cancellation Requested';
+    }
+    
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  const cancelOrderMutation = useMutation({
+    mutationFn: (orderId) => apiClient.cancelOrder(orderId),
+    onSuccess: () => {
+      triggerOrderCancelRefresh();
+      alert('Order cancelled successfully!');
+    },
+    onError: (error) => {
+      alert(error.message || 'Failed to cancel order');
+    }
+  });
+
+  const requestCancellationMutation = useMutation({
+    mutationFn: ({ orderId, reason }) => apiClient.requestOrderCancellation(orderId, reason),
+    onSuccess: () => {
+      triggerOrderCancelRefresh();
+      alert('Cancellation request submitted successfully! An admin will review your request.');
+    },
+    onError: (error) => {
+      alert(error.message || 'Failed to submit cancellation request');
+    }
+  });
+
+  const handleCancelOrder = () => {
+    if (window.confirm('Are you sure you want to cancel this order? Your points will be refunded.')) {
+      cancelOrderMutation.mutate(order._id);
+    }
+  };
+
+  const handleRequestCancellation = () => {
+    const reason = window.prompt('Please provide a reason for cancellation (optional):');
+    if (reason !== null) { // User didn't cancel the prompt
+      requestCancellationMutation.mutate({ orderId: order._id, reason });
     }
   };
 
@@ -197,8 +311,9 @@ const OrderCard = ({ order, onViewDetails }) => {
             </div>
           </div>
           <div className="flex items-center space-x-3 mt-3 sm:mt-0">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-              {order.status}
+            <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getStatusColor(order.status, order)}`}>
+              {getStatusIcon(order.status, order)}
+              <span>{getStatusText(order.status, order)}</span>
             </span>
             <button
               onClick={onViewDetails}
@@ -207,6 +322,31 @@ const OrderCard = ({ order, onViewDetails }) => {
               <EyeIcon className="h-4 w-4 mr-1" />
               View Details
             </button>
+            {order.status === 'pending' && (
+              <button
+                onClick={handleCancelOrder}
+                disabled={cancelOrderMutation.isPending}
+                className="flex items-center text-sm text-red-600 hover:text-red-700 disabled:opacity-50"
+              >
+                <XMarkIcon className="h-4 w-4 mr-1" />
+                {cancelOrderMutation.isPending ? 'Cancelling...' : 'Cancel Order'}
+              </button>
+            )}
+            {order.status === 'completed' && !order.cancellationRequest?.requested && (
+              <button
+                onClick={handleRequestCancellation}
+                disabled={requestCancellationMutation.isPending}
+                className="flex items-center text-sm text-orange-600 hover:text-orange-700 disabled:opacity-50"
+              >
+                <ExclamationCircleIcon className="h-4 w-4 mr-1" />
+                {requestCancellationMutation.isPending ? 'Requesting...' : 'Request Cancellation'}
+              </button>
+            )}
+            {order.status === 'completed' && order.cancellationRequest?.requested && (
+              <span className="text-sm text-orange-600">
+                Cancellation {order.cancellationRequest.adminResponse === 'pending' ? 'Pending' : order.cancellationRequest.adminResponse}
+              </span>
+            )}
           </div>
         </div>
 

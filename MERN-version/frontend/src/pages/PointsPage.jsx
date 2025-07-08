@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
+import { useEventDrivenRefresh } from '../hooks/useUnifiedAutoRefresh';
+import { useCheer } from '../hooks/useCheer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
   HeartIcon,
@@ -12,14 +14,48 @@ import {
   TrophyIcon
 } from '@heroicons/react/24/outline';
 
-const PointsPage= () => {
-  const { user, points } = useAuth();
+const PointsPage = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedUser, setSelectedUser] = useState('');
   const [cheerAmount, setCheerAmount] = useState(10);
   const [cheerMessage, setCheerMessage] = useState('');
   const [isCheerModalOpen, setIsCheerModalOpen] = useState(false);
   const [transactionFilter, setTransactionFilter] = useState('all');
+  const { triggerCheerRefresh } = useEventDrivenRefresh();
+
+  // Auto-refresh is now handled globally
+
+  // Use shared cheer hook for global cache invalidation
+  const cheerMutation = useCheer({
+    onSuccess: () => {
+      // Reset cheer form on successful submission
+      setIsCheerModalOpen(false);
+      setSelectedUser('');
+      setCheerMessage('');
+      setCheerAmount(10);
+    }
+  });
+
+  // Fetch points data with reasonable refresh settings
+  const { data: points, isLoading: pointsLoading } = useQuery({
+    queryKey: ['points'],
+    queryFn: async () => {
+      console.log('🔍 PointsPage - Fetching fresh points data...');
+      const result = await apiClient.getPoints();
+      console.log('📊 PointsPage - Fresh points data received:', result);
+      return result;
+    },
+    staleTime: 1 * 60 * 1000, // 1 minute
+    cacheTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 429) return false;
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
 
   // Fetch users for cheering (non-admin endpoint)
   const { data: users, isLoading: usersLoading } = useQuery({
@@ -34,23 +70,6 @@ const PointsPage= () => {
     queryFn: () => apiClient.getTransactions({ 
       type: transactionFilter === 'all' ? undefined : transactionFilter 
     }),
-  });
-
-  // Cheer mutation
-  const cheerMutation = useMutation({
-    mutationFn: ({ toUserId, amount, message }) =>
-      apiClient.cheerUser({ toUserId, amount, message }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['points'] });
-      setIsCheerModalOpen(false);
-      setSelectedUser('');
-      setCheerMessage('');
-      setCheerAmount(10);
-    },
-    onError: (error) => {
-      console.error('Cheer error:', error);
-    }
   });
 
   // Safety helper to validate transaction data and handle edge cases
@@ -126,7 +145,7 @@ const PointsPage= () => {
     let involvedParty = '';
     
     if (isReceived) {
-      // Received cheer from another employee
+      // Only show received cheer transactions (remove the "given" duplicate)
       if (transaction.type === 'received' && transaction.fromUserId) {
         const fromUser = getSafeUserInfo(transaction.fromUserId);
         if (fromUser) {
@@ -138,29 +157,25 @@ const PointsPage= () => {
         }
         icon = <HeartIcon className="w-5 h-5 text-pink-600" />;
       } 
-      // System-awarded bonuses
-      else if (transaction.description?.includes('Automatic point distribution') || transaction.description?.includes('daily')) {
-        title = 'System-awarded bonus';
-        subtitle = 'Daily point distribution';
-        involvedParty = 'System';
-        icon = <TrophyIcon className="w-5 h-5 text-yellow-600" />;
-      } 
       else if (transaction.type === 'admin_grant' || transaction.description?.includes('admin')) {
         title = 'System bonus points';
         subtitle = 'Administrative grant';
         involvedParty = 'System Administrator';
         icon = <TrophyIcon className="w-5 h-5 text-blue-600" />;
       } 
-      // Generic earned points
-      else {
+      // Generic earned points (excluding automatic distribution)
+      else if (!transaction.description?.includes('Automatic point distribution') && !transaction.description?.includes('daily')) {
         title = 'Points earned';
         subtitle = 'General earnings';
         involvedParty = 'System';
         icon = <ChartBarIcon className="w-5 h-5 text-green-600" />;
+      } else {
+        // Skip automatic distribution transactions
+        return null;
       }
     } 
     else if (isSpent) {
-      // Cheered another employee
+      // Only show given cheer transactions (remove the "received" duplicate)
       if (transaction.type === 'given' && transaction.toUserId) {
         const toUser = getSafeUserInfo(transaction.toUserId);
         if (toUser) {

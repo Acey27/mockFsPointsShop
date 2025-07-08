@@ -1,9 +1,9 @@
 # 🏆 Points Shop - MERN Stack Application
 
-A complete employee recognition and rewards system built with the **MERN Stack** (MongoDB, Express.js, React, Node.js) and TypeScript.
+A complete employee recognition and rewards system built with the **MERN Stack** (MongoDB, Express.js, React, Node.js) using modern JavaScript.
 
 ![MERN Stack](https://img.shields.io/badge/MERN-Stack-brightgreen)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=flat&logo=mongodb&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)
 ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=flat&logo=node.js&logoColor=white)
@@ -14,8 +14,8 @@ Get the application running on your machine in just a few commands:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/mockfs-points-shop.git
-cd mockfs-points-shop
+git clone https://github.com/yourusername/fs-points-shop.git
+cd fs-points-shop
 
 # 2. Navigate to the main application
 cd MERN-version
@@ -27,14 +27,14 @@ npm run install:all
 npm run docker:up
 
 # 5. Set up the database with sample data
-npm run setup
+npm run db:setup
 
 # 6. Start the development servers
 npm run dev
 ```
 
 🎉 **That's it!** The application will be available at:
-- **Frontend**: http://localhost:5175
+- **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3001
 - **Database Admin**: http://localhost:8081 (Mongo Express)
 
@@ -152,7 +152,7 @@ The application comes with pre-loaded demo accounts:
 
 Once running, you can access:
 
-- **🎨 Frontend Application**: http://localhost:5175
+- **🎨 Frontend Application**: http://localhost:5173
 - **🔌 Backend API**: http://localhost:3001
 - **📊 Database Admin (Mongo Express)**: http://localhost:8081
 - **❤️ Health Check**: http://localhost:3001/health
@@ -319,8 +319,8 @@ The application uses MongoDB with the following collections:
 
 **🐛 Port already in use**
 ```bash
-# If ports 3001 or 5175 are busy, kill the processes:
-npx kill-port 3001 5175
+# If ports 3001 or 5173 are busy, kill the processes:
+npx kill-port 3001 5173
 ```
 
 **🐳 Docker issues**

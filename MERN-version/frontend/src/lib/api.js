@@ -151,6 +151,11 @@ class ApiClient {
     return response.data.data;
   }
 
+  async getPoints() {
+    const response = await this.client.get('/api/points');
+    return response.data;
+  }
+
   async getTransactions(params) {
     const response = await this.client.get('/api/points/transactions', { params });
     return response.data;
@@ -162,13 +167,18 @@ class ApiClient {
   }
 
   async cheerUser(data) {
-    const response = await this.client.post('/api/points/cheer', data);
+    const response = await this.client.post('/api/cheer', data);
     return response.data.data;
   }
 
-  async getLeaderboard(params) {
-    const response = await this.client.get('/api/points/leaderboard', { params });
-    return response.data.data;
+  async getLeaderboard(period = 'weekly') {
+    const response = await this.client.get('/api/cheer/leaderboards', { params: { period } });
+    return response.data;
+  }
+
+  // Legacy method for backward compatibility
+  async getLeaderboards(period = 'weekly') {
+    return this.getLeaderboard(period);
   }
 
   // Shop endpoints
@@ -183,11 +193,27 @@ class ApiClient {
   }
 
   async addToCart(productId, quantity) {
-    await this.client.post('/api/shop/cart/add', { productId, quantity });
+    const response = await this.client.post('/api/shop/cart/add', { productId, quantity });
+    return response.data.data;
   }
 
   async getCart() {
     const response = await this.client.get('/api/shop/cart');
+    return response.data;
+  }
+
+  async updateCartItem(productId, quantity) {
+    const response = await this.client.patch('/api/shop/cart/update', { productId, quantity });
+    return response.data.data;
+  }
+
+  async removeFromCart(productId) {
+    const response = await this.client.delete(`/api/shop/cart/remove/${productId}`);
+    return response.data.data;
+  }
+
+  async clearCart() {
+    const response = await this.client.delete('/api/shop/cart/clear');
     return response.data.data;
   }
 
@@ -210,6 +236,20 @@ class ApiClient {
   // Get specific order with receipt
   async getOrderWithReceipt(orderId) {
     const response = await this.client.get(`/api/shop/orders/${orderId}`);
+    return response.data.data;
+  }
+
+  // Cancel order (user)
+  async cancelOrder(orderId) {
+    const response = await this.client.patch(`/api/shop/orders/${orderId}/cancel`);
+    return response.data.data;
+  }
+
+  // Request cancellation for completed orders
+  async requestOrderCancellation(orderId, reason = '') {
+    const response = await this.client.patch(`/api/shop/orders/${orderId}/request-cancellation`, {
+      reason
+    });
     return response.data.data;
   }
 
@@ -297,8 +337,33 @@ class ApiClient {
     return response.data;
   }
 
-  async updateOrderStatus(orderId, status) {
-    const response = await this.client.patch(`/api/admin/orders/${orderId}`, { status });
+  async updateOrderStatus(orderId, status, adminNotes) {
+    const response = await this.client.patch(`/api/admin/orders/${orderId}`, { 
+      status, 
+      adminNotes 
+    });
+    return response.data.data;
+  }
+
+  // Admin cancellation requests
+  async getCancellationRequests(params) {
+    const response = await this.client.get('/api/admin/orders/cancellation-requests', { params });
+    return response.data;
+  }
+
+  async processCancellationRequest(orderId, action, adminNotes) {
+    const response = await this.client.patch(`/api/admin/orders/${orderId}/cancellation-request`, {
+      action,
+      adminNotes
+    });
+    return response.data.data;
+  }
+
+  async processCancellationRequest(orderId, action, adminNotes = '') {
+    const response = await this.client.patch(`/api/admin/orders/${orderId}/cancellation-request`, {
+      action,
+      adminNotes
+    });
     return response.data.data;
   }
 
@@ -331,25 +396,87 @@ class ApiClient {
     return response.data.data;
   }
 
-  // Points Scheduler Management
-  async getSchedulerStatus() {
-    const response = await this.client.get('/api/admin/scheduler/status');
-    return response.data.data;
+  // === CHEER API METHODS ===
+
+  /**
+   * Get cheer statistics for current user
+   * @returns {Promise<Object>} Cheer statistics
+   */
+  async getCheerStats() {
+    const response = await this.client.get('/api/cheer/stats');
+    return response.data;
   }
 
-  async startScheduler() {
-    const response = await this.client.post('/api/admin/scheduler/start');
-    return response.data.data;
+  /**
+   * Get cheers received by current user
+   * @param {Object} params - Query parameters
+   * @returns {Promise<Object>} Received cheers
+   */
+  async getReceivedCheers(params = {}) {
+    const response = await this.client.get('/api/cheer/received', { params });
+    return response.data;
   }
 
-  async stopScheduler() {
-    const response = await this.client.post('/api/admin/scheduler/stop');
-    return response.data.data;
+  /**
+   * Get recent cheers (all users)
+   * @param {Object} params - Query parameters
+   * @returns {Promise<Object>} Recent cheers
+   */
+  async getRecentCheers(params = {}) {
+    const response = await this.client.get('/api/cheer/recent', { params });
+    return response.data;
   }
 
-  async triggerManualDistribution() {
-    const response = await this.client.post('/api/admin/scheduler/distribute');
-    return response.data.data;
+  /**
+   * Search users for cheering
+   * @param {Object} params - Search parameters
+   * @returns {Promise<Object>} Search results
+   */
+  async searchUsers(params = {}) {
+    const response = await this.client.get('/api/cheer/search-users', { params });
+    return response.data;
+  }
+
+  /**
+   * Add a comment to a cheer
+   * @param {string} cheerID - The cheer ID
+   * @param {string} comment - The comment text
+   * @returns {Promise<Object>} Created comment
+   */
+  async addComment(cheerID, comment) {
+    const response = await this.client.post(`/api/cheer/${cheerID}/comments`, { comment });
+    return response.data;
+  }
+
+  /**
+   * Get comments for a cheer
+   * @param {string} cheerID - The cheer ID
+   * @param {Object} params - Query parameters (page, limit)
+   * @returns {Promise<Object>} Comments data
+   */
+  async getComments(cheerID, params = {}) {
+    const response = await this.client.get(`/api/cheer/${cheerID}/comments`, { params });
+    return response.data;
+  }
+
+  /**
+   * Get comment counts for multiple cheers
+   * @param {string[]} cheerIDs - Array of cheer IDs
+   * @returns {Promise<Object>} Comment counts object
+   */
+  async getCommentCounts(cheerIDs) {
+    const response = await this.client.post('/api/cheer/comments/counts', { cheerIDs });
+    return response.data;
+  }
+
+  /**
+   * Delete a comment
+   * @param {string} commentID - The comment ID
+   * @returns {Promise<Object>} Deletion result
+   */
+  async deleteComment(commentID) {
+    const response = await this.client.delete(`/api/cheer/comments/${commentID}`);
+    return response.data;
   }
 }
 

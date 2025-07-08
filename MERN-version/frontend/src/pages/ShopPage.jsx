@@ -4,20 +4,38 @@ import { useAuth } from '../hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useEventDrivenRefresh } from '../hooks/useUnifiedAutoRefresh';
 import {
   ShoppingCartIcon,
   StarIcon,
   ChartBarIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  PlusIcon,
+  MinusIcon,
+  XMarkIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
 const ShopPage= () => {
-  const { points, refreshUserData } = useAuth();
+  const { refreshUserData } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [cart, setCart] = useState([]);
+  const [showCart, setShowCart] = useState(false);
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const { triggerPurchaseRefresh } = useEventDrivenRefresh();
+
+  // Auto-refresh is now handled globally
+
+  // Fetch user's points data with React Query to enable auto-refresh
+  const { data: points, isLoading: pointsLoading } = useQuery({
+    queryKey: ['points'],
+    queryFn: () => apiClient.getPoints(),
+    staleTime: 30000, // 30 seconds
+    refetchInterval: 60000, // Refetch every minute
+    refetchOnWindowFocus: true,
+  });
 
   // Fetch products
   const { data: products, isLoading: productsLoading } = useQuery({
@@ -26,6 +44,46 @@ const ShopPage= () => {
       search: searchTerm || undefined, 
       category: selectedCategory || undefined 
     }),
+  });
+
+  // Fetch cart from database
+  const { data: cart, isLoading: cartLoading, refetch: refetchCart, error: cartError } = useQuery({
+    queryKey: ['cart'],
+    queryFn: () => apiClient.getCart(),
+    staleTime: 0,
+  });
+
+  // Add to cart mutation
+  const addToCartMutation = useMutation({
+    mutationFn: ({ productId, quantity }) => apiClient.addToCart(productId, quantity),
+    onSuccess: () => {
+      refetchCart();
+    },
+    onError: (error) => {
+      alert(error.message || 'Failed to add to cart');
+    }
+  });
+
+  // Update cart mutation
+  const updateCartMutation = useMutation({
+    mutationFn: ({ productId, quantity }) => apiClient.updateCartItem(productId, quantity),
+    onSuccess: () => {
+      refetchCart();
+    },
+    onError: (error) => {
+      alert(error.message || 'Failed to update cart');
+    }
+  });
+
+  // Remove from cart mutation
+  const removeFromCartMutation = useMutation({
+    mutationFn: (productId) => apiClient.removeFromCart(productId),
+    onSuccess: () => {
+      refetchCart();
+    },
+    onError: (error) => {
+      alert(error.message || 'Failed to remove from cart');
+    }
   });
 
   // Purchase mutation
@@ -44,44 +102,27 @@ const ShopPage= () => {
         }
       }),
     onSuccess: (data) => {
-      // Invalidate all relevant queries to refresh UI
+      // Trigger event-driven refresh after purchase (this will handle auth refresh)
+      triggerPurchaseRefresh();
+      
+      // Invalidate all relevant queries to refresh UI across all pages
+      queryClient.invalidateQueries({ queryKey: ['points'] });
       queryClient.invalidateQueries({ queryKey: ['orderHistory'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       
-      // Update points in auth context immediately
-      if (data.newBalance !== undefined) {
-        // Create updated points object
-        const updatedPoints = {
-          ...points,
-          availablePoints: data.newBalance,
-          totalSpent: (points?.totalSpent || 0) + data.receipt.summary.total,
-          lastTransactionAt: new Date().toISOString()
-        };
-        // Update context immediately
-        queryClient.setQueryData(['currentUser'], (oldData) => {
-          if (oldData) {
-            return {
-              ...oldData,
-              points: updatedPoints
-            };
-          }
-          return oldData;
-        });
-      }
+      // Refresh cart (it should be empty after successful checkout)
+      refetchCart();
+      setSelectedItems(new Set());
       
-      // Refresh user data to ensure sync
-      refreshUserData();
-      
-      setCart([]);
-      
-      // Navigate to purchase success page with purchase data
+      // Navigate to success page
       navigate('/purchase-success', { 
-        state: {
+        state: { 
           order: data.order,
           receipt: data.receipt,
-          newBalance: data.newBalance
-        }
+          newBalance: data.newBalance 
+        } 
       });
     },
     onError: (error) => {
@@ -90,21 +131,31 @@ const ShopPage= () => {
   });
 
   const addToCart = (productId) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.productId === productId);
-      if (existing) {
-        return prev.map(item =>
-          item.productId === productId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { productId, quantity: 1 }];
-    });
+    const product = products?.data?.find((p) => p._id === productId);
+    if (!product) return;
+
+    // Check if item already exists in cart
+    const existingItem = cart?.data?.items?.find(item => item.productId?._id === productId);
+    
+    if (existingItem) {
+      // Update quantity if item already exists
+      updateCartMutation.mutate({ productId, quantity: existingItem.quantity + 1 });
+    } else {
+      // Add new item to cart
+      addToCartMutation.mutate({ productId, quantity: 1 });
+      // Auto-select new items when added to cart
+      setSelectedItems(prevSelected => new Set([...prevSelected, productId]));
+    }
   };
 
   const removeFromCart = (productId) => {
-    setCart(prev => prev.filter(item => item.productId !== productId));
+    removeFromCartMutation.mutate(productId);
+    // Remove from selected items when removed from cart
+    setSelectedItems(prevSelected => {
+      const newSelected = new Set(prevSelected);
+      newSelected.delete(productId);
+      return newSelected;
+    });
   };
 
   const updateCartQuantity = (productId, quantity) => {
@@ -112,31 +163,108 @@ const ShopPage= () => {
       removeFromCart(productId);
       return;
     }
-    setCart(prev =>
-      prev.map(item =>
-        item.productId === productId ? { ...item, quantity } : item
-      )
-    );
+    updateCartMutation.mutate({ productId, quantity });
+  };
+
+  const toggleItemSelection = (productId) => {
+    setSelectedItems(prevSelected => {
+      const newSelected = new Set(prevSelected);
+      if (newSelected.has(productId)) {
+        newSelected.delete(productId);
+      } else {
+        newSelected.add(productId);
+      }
+      return newSelected;
+    });
+  };
+
+  const selectAllItems = () => {
+    setSelectedItems(new Set(cart?.data?.items?.map(item => item.productId?._id).filter(Boolean) || []));
+  };
+
+  const deselectAllItems = () => {
+    setSelectedItems(new Set());
   };
 
   const getCartTotal = () => {
-    return cart.reduce((total, item) => {
-      const product = products?.data?.find((p) => p._id === item.productId);
-      return total + (product?.pointsCost || 0) * item.quantity;
-    }, 0);
+    return cart?.data?.items?.reduce((total, item) => {
+      return total + (item.productId?.pointsCost || 0) * item.quantity;
+    }, 0) || 0;
+  };
+
+  const getSelectedTotal = () => {
+    return cart?.data?.items?.reduce((total, item) => {
+      if (selectedItems.has(item.productId?._id)) {
+        return total + (item.productId?.pointsCost || 0) * item.quantity;
+      }
+      return total;
+    }, 0) || 0;
+  };
+
+  const getSelectedItemCount = () => {
+    return cart?.data?.items?.reduce((total, item) => {
+      if (selectedItems.has(item.productId?._id)) {
+        return total + item.quantity;
+      }
+      return total;
+    }, 0) || 0;
   };
 
   const getCartItemCount = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
+    return cart?.data?.items?.reduce((total, item) => total + item.quantity, 0) || 0;
+  };
+
+  const clearCart = () => {
+    apiClient.clearCart().then(() => {
+      refetchCart();
+      setSelectedItems(new Set());
+      setShowCart(false);
+    });
   };
 
   const handlePurchase = () => {
-    if (cart.length > 0) {
-      purchaseMutation.mutate({ items: cart });
+    const selectedCartItems = cart?.data?.items?.filter(item => selectedItems.has(item.productId?._id)) || [];
+    
+    if (selectedCartItems.length > 0) {
+      const total = getSelectedTotal();
+      if (total > (points?.availablePoints || 0)) {
+        alert(`Insufficient points! You need ${total} points but only have ${points?.availablePoints || 0}.`);
+        return;
+      }
+      
+      // Convert cart items to purchase format
+      const purchaseItems = selectedCartItems.map(item => ({
+        productId: item.productId?._id,
+        quantity: item.quantity,
+        pointsCostPerItem: item.productId?.pointsCost
+      }));
+      
+      purchaseMutation.mutate({ items: purchaseItems });
+      setShowCart(false);
+    } else {
+      alert('Please select at least one item to purchase.');
     }
   };
 
-  const categories = Array.from(new Set(products?.data?.map((p) => p.category) || []));
+  const categories = Array.from(new Set(products?.data?.map((p) => p.category) || []))
+    .filter(Boolean)
+    .sort();
+
+  // Filter products client-side as backup to server-side filtering
+  const filteredProducts = products?.data?.filter(product => {
+    const matchesSearch = !searchTerm || 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = !selectedCategory || product.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  }) || [];
+
+  // Show loading if either products or cart is loading
+  if (productsLoading || cartLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="space-y-6">
@@ -150,18 +278,29 @@ const ShopPage= () => {
             <div className="flex items-center space-x-2">
               <ChartBarIcon className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-800">
-                {points?.availablePoints || 0} points available
+                {pointsLoading ? 'Loading...' : `${points?.availablePoints || 0} points available`}
               </span>
             </div>
           </div>
-          {cart.length > 0 && (
+          {getCartItemCount() > 0 && (
             <div className="relative">
               <button
-                onClick={() => {/* Handle cart view */}}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                onClick={() => {
+                  // Scroll to cart panel
+                  const cartPanel = document.getElementById('cart-panel');
+                  if (cartPanel) {
+                    cartPanel.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 relative"
               >
                 <ShoppingCartIcon className="w-4 h-4" />
                 <span>Cart ({getCartItemCount()})</span>
+                {getCartItemCount() > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {getCartItemCount()}
+                  </span>
+                )}
               </button>
             </div>
           )}
@@ -192,13 +331,173 @@ const ShopPage= () => {
               <option value="">All Categories</option>
               {categories.map((category) => (
                 <option key={category} value={category}>
-                  {category}
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
                 </option>
               ))}
             </select>
           </div>
         </div>
       </div>
+
+      {/* Enhanced Cart Panel */}
+      {getCartItemCount() > 0 && (
+        <div id="cart-panel" className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
+          {/* Cart Header */}
+          <div className="px-6 py-4 border-b border-blue-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-100 p-2 rounded-lg">
+                  <ShoppingCartIcon className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-900">
+                    Shopping Cart ({getCartItemCount()} items)
+                  </h3>
+                  <p className="text-sm text-blue-600">
+                    Selected: {getSelectedItemCount()} items ({getSelectedTotal()} points) | Total: {getCartTotal()} points
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={selectedItems.size === cart?.data?.items?.length ? deselectAllItems : selectAllItems}
+                  className="text-green-600 hover:text-green-800 font-medium text-sm"
+                >
+                  {selectedItems.size === cart?.data?.items?.length ? 'Deselect All' : 'Select All'}
+                </button>
+                <button
+                  onClick={clearCart}
+                  className="text-red-600 hover:text-red-800 font-medium text-sm"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Cart Items - Always show when cart has items */}
+          <div className="px-6 py-4">
+            {cartLoading ? (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner size="sm" text="Loading cart..." />
+              </div>
+            ) : cartError ? (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-red-800 text-sm">
+                  Error loading cart: {cartError.message || 'Unknown error'}
+                </p>
+              </div>
+            ) : cart?.data?.items?.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <ShoppingCartIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                <p>Your cart is empty</p>
+              </div>
+            ) : (
+              <div className="space-y-3 mb-4">
+                {cart?.data?.items?.map((item) => (
+                  <div key={item.productId?._id} className={`flex items-center justify-between p-4 rounded-lg border transition-all ${
+                    selectedItems.has(item.productId?._id) 
+                      ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                      : 'bg-white border-gray-200'
+                  }`}>
+                    <div className="flex items-center space-x-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(item.productId?._id)}
+                        onChange={() => toggleItemSelection(item.productId?._id)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <img
+                        src={item.productId?.image || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzNEMyOSA0IDI5IDQgMjkgNEMyOSA0IDI5IDQgMjMgNEMxNyA0IDE3IDQgMTcgNEMxNyA0IDE3IDQgMjMgMzRaIiBmaWxsPSIjOUNBM0FGIi8+CjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjgiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K'}
+                        alt={item.productId?.name || 'Product'}
+                        className="w-12 h-12 object-cover rounded-md"
+                        onError={(e) => {
+                          e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzNEMyOSA0IDI5IDQgMjkgNEMyOSA0IDI5IDQgMjMgNEMxNyA0IDE3IDQgMTcgNEMxNyA0IDE3IDQgMjMgMzRaIiBmaWxsPSIjOUNBM0FGIi8+CjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjgiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K';
+                        }}
+                      />
+                      <div>
+                        <h4 className="font-medium text-gray-900">{item.productId?.name || 'Loading...'}</h4>
+                        <p className="text-sm text-gray-600">{item.productId?.pointsCost || 0} points each</p>
+                        {item.productId?.description && (
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.productId.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => updateCartQuantity(item.productId?._id, item.quantity - 1)}
+                          className="p-1 rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          <MinusIcon className="w-4 h-4 text-gray-600" />
+                        </button>
+                        <span className="w-8 text-center font-medium text-gray-900">{item.quantity}</span>
+                        <button
+                          onClick={() => updateCartQuantity(item.productId?._id, item.quantity + 1)}
+                          className="p-1 rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          <PlusIcon className="w-4 h-4 text-gray-600" />
+                        </button>
+                      </div>
+                      <div className="text-right min-w-[80px]">
+                        <p className="font-semibold text-gray-900">{(item.productId?.pointsCost || 0) * item.quantity} pts</p>
+                      </div>
+                      <button
+                        onClick={() => removeFromCart(item.productId?._id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Cart Summary and Actions */}
+            {cart?.data?.items?.length > 0 && (
+              <div className="border-t border-blue-200 pt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col space-y-1">
+                    <div className="text-lg font-semibold text-blue-900">
+                      Selected: {getSelectedTotal()} points ({getSelectedItemCount()} items)
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Available: {points?.availablePoints || 0} points | Cart Total: {getCartTotal()} points
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    {getSelectedTotal() > (points?.availablePoints || 0) && (
+                      <div className="bg-red-50 text-red-700 px-3 py-1 rounded-md text-sm">
+                        Insufficient points! Need {getSelectedTotal() - (points?.availablePoints || 0)} more.
+                      </div>
+                    )}
+                    {selectedItems.size === 0 && (
+                      <div className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-md text-sm">
+                        Select items to purchase
+                      </div>
+                    )}
+                    <button
+                      onClick={handlePurchase}
+                      disabled={purchaseMutation.isPending || getSelectedTotal() > (points?.availablePoints || 0) || selectedItems.size === 0}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
+                    >
+                      {purchaseMutation.isPending ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <>
+                          <CheckCircleIcon className="w-4 h-4" />
+                          <span>Purchase Selected ({getSelectedTotal()} pts)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Products Grid */}
       {productsLoading ? (
@@ -207,8 +506,8 @@ const ShopPage= () => {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products?.data?.map((product) => {
-            const cartItem = cart.find(item => item.productId === product._id);
+          {filteredProducts?.map((product) => {
+            const cartItem = cart?.data?.items?.find(item => item.productId?._id === product._id);
             const canAfford = (points?.availablePoints || 0) >= product.pointsCost;
             
             return (
@@ -288,22 +587,29 @@ const ShopPage= () => {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => addToCart(product._id)}
-                      disabled={!canAfford || product.inventory === 0}
-                      className={`w-full py-2 rounded-md font-medium transition-colors ${
-                        canAfford && product.inventory > 0
-                          ? 'bg-blue-600 text-white hover:bg-blue-700'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      {product.inventory === 0
-                        ? 'Out of Stock'
-                        : !canAfford
-                        ? 'Not Enough Points'
-                        : 'Add to Cart'
-                      }
-                    </button>
+                    <div className="space-y-2">
+                      {!canAfford && (
+                        <div className="text-xs text-red-600 text-center bg-red-50 px-2 py-1 rounded">
+                          Need {product.pointsCost - (points?.availablePoints || 0)} more points
+                        </div>
+                      )}
+                      <button
+                        onClick={() => addToCart(product._id)}
+                        disabled={!canAfford || product.inventory === 0}
+                        className={`w-full py-2 rounded-md font-medium transition-colors ${
+                          canAfford && product.inventory > 0
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {product.inventory === 0
+                          ? 'Out of Stock'
+                          : !canAfford
+                          ? 'Not Enough Points'
+                          : 'Add to Cart'
+                        }
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -319,29 +625,41 @@ const ShopPage= () => {
       )}
 
       {/* Cart Summary & Checkout */}
-      {cart.length > 0 && (
+      {getCartItemCount() > 0 && (
         <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg border border-blue-100 p-4 max-w-sm">
           <h3 className="font-semibold text-blue-900 mb-2">Cart Summary</h3>
           <div className="space-y-2 mb-4">
-            {cart.map((item) => {
-              const product = products?.data?.find((p) => p._id === item.productId);
+            {cart?.data?.items?.map((item) => {
+              const isSelected = selectedItems.has(item.productId?._id);
               return (
-                <div key={item.productId} className="flex justify-between text-sm">
-                  <span>{product?.name} x{item.quantity}</span>
-                  <span>{(product?.pointsCost || 0) * item.quantity} pts</span>
+                <div key={item.productId?._id} className={`flex justify-between text-sm ${isSelected ? 'text-blue-900 font-medium' : 'text-gray-500'}`}>
+                  <span className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleItemSelection(item.productId?._id)}
+                      className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
+                    />
+                    <span>{item.productId?.name} x{item.quantity}</span>
+                  </span>
+                  <span>{(item.productId?.pointsCost || 0) * item.quantity} pts</span>
                 </div>
               );
             })}
           </div>
           <div className="border-t pt-2 mb-4">
-            <div className="flex justify-between font-semibold">
-              <span>Total:</span>
+            <div className="flex justify-between font-semibold mb-1">
+              <span>Selected:</span>
+              <span className="text-blue-600">{getSelectedTotal()} pts</span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Cart Total:</span>
               <span>{getCartTotal()} pts</span>
             </div>
           </div>
           <button
             onClick={handlePurchase}
-            disabled={purchaseMutation.isPending || getCartTotal() > (points?.availablePoints || 0)}
+            disabled={purchaseMutation.isPending || getSelectedTotal() > (points?.availablePoints || 0) || selectedItems.size === 0}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {purchaseMutation.isPending ? (
@@ -349,7 +667,7 @@ const ShopPage= () => {
             ) : (
               <>
                 <ShoppingCartIcon className="w-4 h-4" />
-                <span>Purchase</span>
+                <span>Purchase Selected</span>
               </>
             )}
           </button>
